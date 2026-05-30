@@ -21,6 +21,19 @@ export const CARD_COLORS = {
   mediaPlaceholder: "#e5e0dc",
 } as const;
 
+/**
+ * Gold treatment for a card whose author zapped the event (a "patron print").
+ * A thin gold ring (no glow), mirrored by both renderers — the WebGL texture
+ * strokes it, the DOM card draws it as an inset box-shadow — plus the slash
+ * rank marks in the footer.
+ */
+export const CARD_GOLD = {
+  /** the ring drawn just inside the card edge — oklch(~72% 0.13 80) */
+  ring: "#d9a521",
+  /** brighter inner highlight, for the canvas ring's 2-stop gradient */
+  ringBright: "#f3c64d",
+} as const;
+
 /** warm "print resting on the wall" shadow — replaces the cool rgba-black drop. */
 export const CARD_SHADOW_REST = "0 6px 18px rgba(54, 43, 37, 0.16)";
 /** deeper warm shadow for a print lifted on hover/focus (paired with translateY). */

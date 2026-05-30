@@ -151,3 +151,23 @@ export async function loadEntries(pop: Pop): Promise<Post[]> {
   const posts = await Promise.all([...events].map(toPost));
   return posts.sort((a, b) => b.createdAt - a.createdAt);
 }
+
+/**
+ * Subscribe to guestbook entries scoped to `pop`, invoking `onPost` for each one
+ * (with its author profile resolved). Stays open for live arrivals; returns an
+ * unsubscribe. The caller is expected to de-duplicate by post id, since the
+ * initial fetch and this stream can overlap.
+ */
+export function subscribeEntries(
+  pop: Pop,
+  onPost: (post: Post) => void,
+): () => void {
+  const sub = ndk.subscribe(
+    { kinds: [ENTRY_KIND], "#E": [pop.id] },
+    { closeOnEose: false },
+  );
+  sub.on("event", (event: NDKEvent) => {
+    void toPost(event).then(onPost);
+  });
+  return () => sub.stop();
+}

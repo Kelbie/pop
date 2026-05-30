@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { Post } from "../types/post";
-import { CARD_COLORS } from "../canvas/cardTheme";
+import { CARD_COLORS, CARD_GOLD } from "../canvas/cardTheme";
 import { ENTRY_KIND } from "../lib/guestbook";
 import { nostrComEventUrl } from "../lib/nevent";
 import { RELAYS } from "../lib/ndk";
@@ -11,9 +11,15 @@ import { PostCardContent } from "./PostCardContent";
 export function DetailModal({
   post,
   onClose,
+  gold = false,
+  medal = 0,
 }: {
   post: Post;
   onClose: () => void;
+  /** author zapped -> gold ring + glow on the enlarged card */
+  gold?: boolean;
+  /** podium place 1-3 -> 🥇/🥈/🥉 badge */
+  medal?: number;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -38,10 +44,15 @@ export function DetailModal({
     >
       <div
         className="pop-modal-pop w-[380px] max-w-full overflow-hidden rounded-2xl"
-        style={{ backgroundColor: CARD_COLORS.surface, boxShadow: "0 12px 28px rgba(54, 43, 37, 0.22)" }}
+        style={{
+          backgroundColor: CARD_COLORS.surface,
+          boxShadow: gold
+            ? `0 12px 28px rgba(54, 43, 37, 0.22), inset 0 0 0 1px ${CARD_GOLD.ring}`
+            : "0 12px 28px rgba(54, 43, 37, 0.22)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <PostCardContent post={post} large />
+        <PostCardContent post={post} large medal={medal} />
         <a
           href={nostrUrl}
           target="_blank"

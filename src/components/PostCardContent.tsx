@@ -1,19 +1,49 @@
 import type { Post } from "../types/post";
 import { MONO_STACK } from "../canvas/cardGeometry";
-import { CARD_COLORS } from "../canvas/cardTheme";
+import { CARD_COLORS, CARD_GOLD } from "../canvas/cardTheme";
+import { slashesForRank } from "../lib/medals";
 import { formatRelative } from "../lib/time";
 import { proxyImage } from "../lib/img";
+
+/** Gold slash rank marks: /// 1st, // 2nd, / 3rd. */
+function GoldSlashes({ count }: { count: number }) {
+  const slant = 4;
+  const h = 11;
+  const gap = 5;
+  const w = (count - 1) * gap + slant + 2;
+  return (
+    <svg
+      width={w}
+      height={h + 2}
+      viewBox={`0 0 ${w} ${h + 2}`}
+      stroke={CARD_GOLD.ring}
+      strokeWidth={2}
+      strokeLinecap="round"
+      fill="none"
+      aria-hidden
+    >
+      {Array.from({ length: count }, (_, i) => (
+        <line key={i} x1={i * gap + 1} y1={h + 1} x2={i * gap + 1 + slant} y2={1} />
+      ))}
+    </svg>
+  );
+}
 
 /**
  * The real (DOM) rendering of a post. Used for the zoomed-in HtmlCard and the
  * detail modal — crisp text, selectable, real <img>, clickable links.
+ *
+ * `medal` (1-3) shows gold slash rank marks (/// // /), mirroring the canvas
+ * texture (the gold ring for any patron is applied by the caller).
  */
 export function PostCardContent({
   post,
   large = false,
+  medal = 0,
 }: {
   post: Post;
   large?: boolean;
+  medal?: number;
 }) {
   return (
     <div className="flex h-full flex-col p-4">
@@ -82,11 +112,12 @@ export function PostCardContent({
         />
       )}
 
-      {(post.reactions || post.zaps) && (
+      {(medal > 0 || post.reactions || post.zaps) && (
         <div
-          className="mt-auto flex gap-3.5 pt-2.5 text-xs"
+          className="mt-auto flex items-center gap-3.5 pt-2.5 text-xs"
           style={{ color: CARD_COLORS.mutedInk, fontFamily: MONO_STACK, letterSpacing: "0.02em" }}
         >
+          {medal > 0 ? <GoldSlashes count={slashesForRank(medal)} /> : null}
           {post.reactions ? <span>♥ {post.reactions}</span> : null}
           {post.zaps ? <span>⚡ {post.zaps}</span> : null}
         </div>
