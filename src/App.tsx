@@ -24,7 +24,12 @@ function App() {
       <Header onLoginClick={() => setLoginOpen(true)} />
 
       <main className="flex flex-col items-center gap-8 px-6 py-16">
-        <div className="text-center space-y-3">
+        <div className="flex flex-col items-center text-center space-y-3">
+          <img
+            src="/logo-dark.jpeg"
+            alt="Pop logo"
+            className="h-24 w-24 rounded-3xl"
+          />
           <h1 className="text-4xl font-bold tracking-tight">Pop</h1>
           <p className="text-neutral-400 max-w-md">
             Decentralized guestbooks for events, on Nostr. Leave notes, drop

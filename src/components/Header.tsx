@@ -43,8 +43,15 @@ export function Header({ onLoginClick }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-800 bg-neutral-950/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-        <span className="text-lg font-bold tracking-tight text-neutral-100">
-          Pop
+        <span className="flex items-center gap-2">
+          <img
+            src="/logo-dark.jpeg"
+            alt="Pop logo"
+            className="h-8 w-8 rounded-lg"
+          />
+          <span className="text-lg font-bold tracking-tight text-neutral-100">
+            Pop
+          </span>
         </span>
 
         {authed ? (
