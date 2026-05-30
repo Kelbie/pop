@@ -2,6 +2,7 @@ import type { Post } from "../types/post";
 import { MONO_STACK } from "../canvas/cardGeometry";
 import { CARD_COLORS } from "../canvas/cardTheme";
 import { formatRelative } from "../lib/time";
+import { proxyImage } from "../lib/img";
 
 /**
  * The real (DOM) rendering of a post. Used for the zoomed-in HtmlCard and the
@@ -19,7 +20,7 @@ export function PostCardContent({
       <div className="flex items-center gap-2.5">
         {post.author.avatarUrl ? (
           <img
-            src={post.author.avatarUrl}
+            src={proxyImage(post.author.avatarUrl, 96)}
             alt=""
             crossOrigin="anonymous"
             className="h-10 w-10 shrink-0 rounded-full object-cover"
@@ -68,7 +69,7 @@ export function PostCardContent({
 
       {post.media && (
         <img
-          src={post.media.url}
+          src={proxyImage(post.media.url, large ? 960 : 640)}
           alt=""
           crossOrigin="anonymous"
           loading="lazy"

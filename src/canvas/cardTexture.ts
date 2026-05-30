@@ -3,6 +3,7 @@ import type { Post } from "../types/post";
 import { CARD, computeCardGeometry, type CardGeometry } from "./cardGeometry";
 import { CARD_COLORS, CARD_SHADOW_REST_COLOR } from "./cardTheme";
 import { formatRelative } from "../lib/time";
+import { proxyImage } from "../lib/img";
 
 // Device pixel ratio, capped at 2 to bound VRAM (200 tall media cards add up).
 export const DPR = Math.min(
@@ -225,7 +226,7 @@ export function buildCardTexture(post: Post): CardTextureHandle {
 
   // draw-twice: load images, then patch the texture in place
   if (post.author.avatarUrl) {
-    loadImage(post.author.avatarUrl)
+    loadImage(proxyImage(post.author.avatarUrl, 96))
       .then((img) => {
         images.avatar = img;
         redraw();
@@ -233,7 +234,7 @@ export function buildCardTexture(post: Post): CardTextureHandle {
       .catch(() => {});
   }
   if (post.media) {
-    loadImage(post.media.url)
+    loadImage(proxyImage(post.media.url, 640))
       .then((img) => {
         images.media = img;
         redraw();
