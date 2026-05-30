@@ -1,15 +1,7 @@
-import { nip19 } from "@nostr-dev-kit/ndk";
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
-
-function shortNpub(pubkey: string): string {
-  try {
-    const npub = nip19.npubEncode(pubkey);
-    return `${npub.slice(0, 10)}…${npub.slice(-4)}`;
-  } catch {
-    return `${pubkey.slice(0, 8)}…`;
-  }
-}
+import { shortNpub } from "../lib/pubkey";
 
 interface HeaderProps {
   onLoginClick: () => void;
@@ -43,7 +35,7 @@ export function Header({ onLoginClick }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-800 bg-neutral-950/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-        <span className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2">
           <img
             src="/logo-dark.jpeg"
             alt="Pop logo"
@@ -52,7 +44,7 @@ export function Header({ onLoginClick }: HeaderProps) {
           <span className="text-lg font-bold tracking-tight text-neutral-100">
             Pop
           </span>
-        </span>
+        </Link>
 
         {authed ? (
           <div className="relative" ref={menuRef}>

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { Route, Routes } from "react-router-dom";
+import { DonatePage } from "./components/DonatePage";
 import { Header } from "./components/Header";
 import { LoginModal } from "./components/LoginModal";
 import { PopCreator } from "./components/PopCreator";
@@ -8,19 +10,16 @@ import { useAuthStore } from "./store/auth";
 
 type View = "home" | "canvas";
 
-function App() {
+function Home({ onLoginClick }: { onLoginClick: () => void }) {
   const [status, setStatus] = useState<"connecting" | "connected" | "error">(
     "connecting",
   );
-  const [loginOpen, setLoginOpen] = useState(false);
   const [view, setView] = useState<View>("home");
 
   useEffect(() => {
     connectNdk()
       .then(() => setStatus("connected"))
       .catch(() => setStatus("error"));
-    // Rebuild a persisted Nostr session, if any.
-    void useAuthStore.getState().restore();
   }, []);
 
   if (view === "canvas") {
@@ -28,33 +27,52 @@ function App() {
   }
 
   return (
+    <main className="flex flex-col items-center gap-8 px-6 py-16">
+      <div className="flex flex-col items-center text-center space-y-3">
+        <img
+          src="/logo-dark.jpeg"
+          alt="Pop logo"
+          className="h-24 w-24 rounded-3xl"
+        />
+        <h1 className="text-4xl font-bold tracking-tight">Pop</h1>
+        <p className="text-neutral-400 max-w-md">
+          Decentralized guestbooks for events, on Nostr. Leave notes, drop
+          photos, zap the host.
+        </p>
+        <ConnectionStatus status={status} />
+        <button
+          type="button"
+          onClick={() => setView("canvas")}
+          className="mt-1 rounded-xl border border-neutral-700 px-4 py-2 text-sm font-semibold text-neutral-200 transition hover:border-neutral-500 hover:text-white"
+        >
+          View the guestbook →
+        </button>
+      </div>
+
+      <CreatorSection onLoginClick={onLoginClick} />
+    </main>
+  );
+}
+
+function App() {
+  const [loginOpen, setLoginOpen] = useState(false);
+
+  useEffect(() => {
+    // Rebuild a persisted Nostr session, if any.
+    void useAuthStore.getState().restore();
+  }, []);
+
+  return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100">
       <Header onLoginClick={() => setLoginOpen(true)} />
 
-      <main className="flex flex-col items-center gap-8 px-6 py-16">
-        <div className="flex flex-col items-center text-center space-y-3">
-          <img
-            src="/logo-dark.jpeg"
-            alt="Pop logo"
-            className="h-24 w-24 rounded-3xl"
-          />
-          <h1 className="text-4xl font-bold tracking-tight">Pop</h1>
-          <p className="text-neutral-400 max-w-md">
-            Decentralized guestbooks for events, on Nostr. Leave notes, drop
-            photos, zap the host.
-          </p>
-          <ConnectionStatus status={status} />
-          <button
-            type="button"
-            onClick={() => setView("canvas")}
-            className="mt-1 rounded-xl border border-neutral-700 px-4 py-2 text-sm font-semibold text-neutral-200 transition hover:border-neutral-500 hover:text-white"
-          >
-            View the guestbook →
-          </button>
-        </div>
-
-        <CreatorSection onLoginClick={() => setLoginOpen(true)} />
-      </main>
+      <Routes>
+        <Route
+          path="/"
+          element={<Home onLoginClick={() => setLoginOpen(true)} />}
+        />
+        <Route path="/p/:id" element={<DonatePage />} />
+      </Routes>
 
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </div>

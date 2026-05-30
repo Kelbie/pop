@@ -23,9 +23,13 @@ Core ideas:
   Styling is Tailwind utility classes only — no CSS-in-JS, no component library. The theme is dark:
   `bg-neutral-950` / `text-neutral-100`, with `indigo-600` as the primary accent.
 - **[NDK](https://github.com/nostr-dev-kit/ndk)** (`@nostr-dev-kit/ndk`) for all Nostr work — relays,
-  signing, profiles, and (planned) zaps. Do not hand-roll protocol code; prefer NDK's helpers/signers.
+  signing, profiles, subscriptions. Do not hand-roll protocol code; prefer NDK's helpers/signers.
+- **[nostr-tools](https://github.com/nbd-wtf/nostr-tools)** — used narrowly for `nip57.makeZapRequest`
+  and ephemeral-key signing (`generateSecretKey`/`finalizeEvent`) in the donation flow. Prefer NDK
+  elsewhere; `nip19` comes from NDK.
+- **[react-router-dom](https://reactrouter.com) v7** — client-side routing.
 - **[Zustand](https://github.com/pmndrs/zustand) v5** (`persist` middleware) for client state.
-- **[qrcode.react](https://github.com/zpao/qrcode.react)** for rendering connection QR codes.
+- **[qrcode.react](https://github.com/zpao/qrcode.react)** for rendering QR codes.
 - **Bun** is the package manager and runtime.
 
 ### Commands
@@ -45,19 +49,25 @@ errors, and do not fail the build.)
 
 ```
 src/
-  main.tsx              entry point
-  App.tsx               root: mounts <Header>, <LoginModal>, restores session, gates the Pop creator on auth
+  main.tsx              entry: <BrowserRouter><App/></BrowserRouter>
+  App.tsx               root: <Header> + <Routes> (/ → Home with Pop creator, /p/:id → DonatePage) + <LoginModal>; restores session
   index.css             Tailwind import
   lib/
     ndk.ts              the shared `ndk` NDK singleton + connectNdk() (relays from VITE_RELAYS env)
     pop.ts              Pop (guestbook) data model — POP_KIND, createPop(), fetchPops()
+    pubkey.ts           parsePubkeyParam (npub|hex → {hex,npub}), shortNpub
+    npubcash.ts         npub.cash LNURL helpers + buildSignedZapRequest (NIP-57)
   store/
     auth.ts             Zustand auth store — single source of truth for identity
+  hooks/
+    useDonations.ts     live kind-9735 subscription → running total + donor list
   components/
     Modal.tsx           generic portal modal (backdrop, Escape, click-outside, body-scroll-lock)
-    LoginModal.tsx      tabbed login UI built on <Modal>
-    Header.tsx          sticky top nav: login button / user chip + logout
+    LoginModal.tsx      tabbed login + signup UI built on <Modal>
+    Header.tsx          sticky top nav: logo links to /, login button / user chip + logout
     PopCreator.tsx      host UI: create-a-Pop form + list of the host's Pops
+    DonatePage.tsx      /p/:id donation page: address QR, total, zap flow, donor list
+    DonorRow.tsx        one donor row with lazy profile fetch
 ```
 
 ## Authentication architecture
@@ -251,3 +261,23 @@ only what a use case needs. Distilled by capability:
 - Keep comments sparse and purposeful (explain *why*, mirror the existing density).
 - New dependencies should be justified and minimal — the project deliberately keeps a small footprint.
 - Run `bun run build` and `bun run lint` before finishing; both must pass clean.
+
+## Donation page architecture (`/p/:id`)
+
+Turns any pubkey into a tip jar backed by **npub.cash** (domain `npubx.cash`, override via
+`VITE_NPUBCASH_DOMAIN`). Lightning address = `<npub>@<domain>`.
+
+- **Invoices:** `GET https://<domain>/.well-known/lnurlp/<npub>?amount=<msats>&nostr=<signed 9734>` →
+  `{ pr }` (`fetchZapInvoice` in `lib/npubcash.ts`). The bare endpoint returns LNURL metadata incl.
+  `nostrPubkey` (`fetchZapServerPubkey`).
+- **Totals come from NIP-57 zap receipts (kind 9735)**, not from any npub.cash API. `useDonations`
+  subscribes to `{ kinds: [9735], "#p": [recipientHex] }`, parses each receipt's `description` (the
+  serialised zap request) → its `amount` tag (millisats ÷ 1000 = sats), and sums. Sender = the zap
+  request `pubkey` (fallback receipt `P` tag).
+- **Authenticity:** only receipts whose `event.pubkey === nostrPubkey` (the npub.cash service key) are
+  counted, so forged 9735s can't inflate the total. Keep this filter.
+- **Attribution:** `buildSignedZapRequest` signs the kind-9734 with `ndk.signer` when logged in
+  (attributed to that npub) or an ephemeral nostr-tools key when anonymous (shown as "Anonymous").
+- **Only zaps are counted** — a plain Lightning payment to the address produces no receipt. The page's
+  Zap button always sends a zap request; this caveat is surfaced in the UI copy. Don't "fix" it by
+  counting non-zap payments (there's no on-Nostr record of them).

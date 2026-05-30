@@ -12,10 +12,12 @@
   "dependencies": {
     "@nostr-dev-kit/ndk": "^3.0.3",
     "@use-gesture/react": "^10.3.1",
+    "nostr-tools": "^2.23.5",
     "pixi.js": "^8.18.1",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "react-router-dom": "^7.16.0",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
