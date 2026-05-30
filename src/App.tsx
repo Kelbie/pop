@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import { Header } from "./components/Header";
 import { LoginModal } from "./components/LoginModal";
 import { PopCreator } from "./components/PopCreator";
@@ -41,6 +41,9 @@ function Home({ onLoginClick }: { onLoginClick: () => void }) {
 
 function App() {
   const [loginOpen, setLoginOpen] = useState(false);
+  // The guestbook page is a full-screen canvas with its own floating top bar,
+  // so the global header is hidden there.
+  const fullBleed = useLocation().pathname.startsWith("/e/");
 
   useEffect(() => {
     // Rebuild a persisted Nostr session, if any.
@@ -48,8 +51,8 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-900">
-      <Header onLoginClick={() => setLoginOpen(true)} />
+    <div className="min-h-screen bg-paper text-ink">
+      {!fullBleed && <Header onLoginClick={() => setLoginOpen(true)} />}
 
       <Routes>
         <Route

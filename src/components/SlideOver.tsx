@@ -1,37 +1,32 @@
 import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-interface ModalProps {
+interface SlideOverProps {
   open: boolean;
   onClose: () => void;
   title?: string;
   subtitle?: string;
-  /** "md" (default) for forms; "lg" for the wider donation panel. */
-  size?: "md" | "lg";
   children: ReactNode;
 }
 
-const SIZE = {
-  md: "max-w-md",
-  lg: "max-w-lg",
-} as const;
-
-/** Generic centered modal rendered in a portal, with Escape and click-outside to close. */
-export function Modal({
+/**
+ * Right-anchored slide-over panel rendered in a portal. The wall stays visible
+ * behind it (dimmed), so you can write a note while seeing the guestbook.
+ * Mirrors Modal's Escape / click-outside / body-scroll-lock behavior.
+ */
+export function SlideOver({
   open,
   onClose,
   title,
   subtitle,
-  size = "md",
   children,
-}: ModalProps) {
+}: SlideOverProps) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKey);
-    // Prevent the page behind the modal from scrolling.
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
@@ -44,26 +39,18 @@ export function Modal({
 
   return createPortal(
     <div
-      className="pop-modal-fade fixed inset-0 z-50 flex items-center justify-center bg-ink/30 p-4 backdrop-blur-sm"
+      className="pop-modal-fade fixed inset-0 z-50 flex justify-end bg-ink/30 backdrop-blur-sm"
       onClick={onClose}
       role="presentation"
     >
       <div
-        className={
-          "pop-modal-pop flex max-h-[88vh] w-full flex-col rounded-2xl border border-hairline bg-polaroid text-ink shadow-2xl " +
-          SIZE[size]
-        }
+        className="pop-sheet-in flex h-full w-full max-w-md flex-col border-l border-hairline bg-polaroid text-ink shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label={title}
       >
-        <div
-          className={
-            "flex shrink-0 items-start justify-between gap-4 px-6 py-4 " +
-            (title || subtitle ? "border-b border-hairline" : "pb-0")
-          }
-        >
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-hairline px-6 py-4">
           <div className="space-y-1">
             {title && <h2 className="text-lg font-semibold">{title}</h2>}
             {subtitle && <p className="text-sm text-muted">{subtitle}</p>}
@@ -79,7 +66,7 @@ export function Modal({
             </svg>
           </button>
         </div>
-        <div className="overflow-y-auto px-6 pb-5 pt-3">{children}</div>
+        <div className="overflow-y-auto px-6 py-5">{children}</div>
       </div>
     </div>,
     document.body,

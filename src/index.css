@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/* Warm "Disposable Camera" palette (DESIGN.md §2), realized from the single
+   source of truth in src/canvas/cardTheme.ts. Exposed as Tailwind v4 theme
+   tokens so chrome (top bar, modals, CTAs) uses bg-ink / text-muted /
+   border-hairline instead of off-spec amber/indigo/slate. */
+@theme {
+  --color-paper: #f4efeb;
+  --color-polaroid: #fcfaf6;
+  --color-ink: #241e1a;
+  --color-muted: #706761;
+  --color-hairline: #e3ddd8;
+  --color-avatar: #dcd6d3;
+  --color-avatar-ink: #5b544f;
+  /* Flash Gold — oklch(82% 0.12 80). A *moment*, not a surface: zap-send only. */
+  --color-flash: #e3ad4b;
+  --color-flash-deep: #c9923a;
+}
+
 html,
 body,
 #root {
@@ -70,10 +87,24 @@ body,
   outline-offset: 2px;
 }
 
+/* Right slide-over: the Sign composer slides in over the visible wall. */
+@keyframes popSheetIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.pop-sheet-in {
+  animation: popSheetIn 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pop-card-fade,
   .pop-modal-fade,
-  .pop-modal-pop {
+  .pop-modal-pop,
+  .pop-sheet-in {
     animation: none;
   }
   .pop-print {

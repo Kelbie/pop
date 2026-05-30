@@ -4,27 +4,29 @@ import type { Post } from "../types/post";
 import { DetailModal } from "../components/DetailModal";
 import { DomOverlay } from "../components/DomOverlay";
 import { PixiStage } from "../components/PixiStage";
-import { SearchPill } from "../components/SearchPill";
 
 export type CanvasStatus = "loading" | "empty" | "ready";
 
 /**
  * Presentational guestbook wall. Renders the supplied posts on the Pixi canvas
- * (pan / zoom / search / detail). Fills its parent — give it a sized container.
+ * (pan / zoom / detail). Search is controlled by the caller (the event top bar
+ * owns the input); we dim non-matching cards. Fills its parent — give it a
+ * sized container.
  */
 export function GuestbookCanvas({
   posts,
   status,
+  query = "",
 }: {
   posts: Post[];
   status: CanvasStatus;
+  query?: string;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<CanvasController | null>(null);
 
   const [ready, setReady] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
   const [lod, setLod] = useState<{ mode: LodMode; ids: string[] }>({
     mode: "far",
     ids: [],
@@ -110,7 +112,7 @@ export function GuestbookCanvas({
     : null;
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[#f4efeb]">
+    <div className="relative h-full w-full overflow-hidden bg-paper">
       <PixiStage
         hostRef={hostRef}
         controllerRef={controllerRef}
@@ -126,8 +128,6 @@ export function GuestbookCanvas({
         />
       )}
 
-      <SearchPill value={query} onChange={setQuery} />
-
       <ZoomControls
         onZoom={(f) =>
           controllerRef.current?.applyZoomAt(
@@ -141,16 +141,14 @@ export function GuestbookCanvas({
 
       {status === "loading" && (
         <Centered>
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600" />
-          <span className="text-sm text-neutral-500">Loading the guestbook…</span>
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-hairline border-t-muted" />
+          <span className="text-sm text-muted">Loading the guestbook…</span>
         </Centered>
       )}
       {status === "empty" && (
         <Centered>
-          <span className="text-lg font-medium text-neutral-700">
-            No posts yet
-          </span>
-          <span className="text-sm text-neutral-500">
+          <span className="text-lg font-medium text-ink">No posts yet</span>
+          <span className="text-sm text-muted">
             Be the first to sign this guestbook.
           </span>
         </Centered>
@@ -179,7 +177,7 @@ function ZoomControls({
   onFit: () => void;
 }) {
   const btn =
-    "flex h-9 w-9 items-center justify-center rounded-lg bg-white/90 text-neutral-700 shadow hover:bg-white";
+    "flex h-9 w-9 items-center justify-center rounded-lg bg-polaroid/90 text-ink shadow-sm backdrop-blur hover:bg-polaroid";
   return (
     <div className="absolute bottom-5 right-5 z-20 flex flex-col gap-2">
       <button type="button" className={btn} onClick={() => onZoom(1.2)} aria-label="Zoom in">

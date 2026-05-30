@@ -1,4 +1,9 @@
-import { NDKEvent, type NDKKind, nip19 } from "@nostr-dev-kit/ndk";
+import {
+  NDKEvent,
+  type NDKKind,
+  NDKPrivateKeySigner,
+  nip19,
+} from "@nostr-dev-kit/ndk";
 import { ndk, RELAYS } from "./ndk";
 import { POP_KIND, type Pop } from "./pop";
 import type { Post, PostMedia } from "../types/post";
@@ -15,13 +20,25 @@ function imetaTag(url: string): string[] {
   return ["imeta", `url ${url}`, "m image/*"];
 }
 
-/** Publish a guestbook entry (kind 1111) scoped to `pop`, signed by the current user. */
+/**
+ * Publish a guestbook entry (kind 1111) scoped to `pop`.
+ *
+ * - Logged-in: signed by the current `ndk.signer` (the visitor's Nostr account).
+ * - Guest (`guest: true`): signed with a throwaway keypair generated in-browser,
+ *   leaving any logged-in session untouched. The optional `name` is carried on
+ *   the entry as a `["name", …]` tag so it renders instantly on the wall for
+ *   everyone, and (for guests) mirrored into a best-effort kind-0 so the name
+ *   also resolves in other Nostr clients.
+ */
 export async function createEntry(input: {
   pop: Pop;
   message: string;
   imageUrl?: string;
+  name?: string;
+  guest?: boolean;
 }): Promise<Post> {
-  const { pop, message, imageUrl } = input;
+  const { pop, message, imageUrl, guest } = input;
+  const name = input.name?.trim() || undefined;
   const kindStr = String(POP_KIND as unknown as number);
 
   const event = new NDKEvent(ndk);
@@ -38,6 +55,14 @@ export async function createEntry(input: {
     ["p", pop.host, RELAY_HINT],
   ];
   if (imageUrl) event.tags.push(imetaTag(imageUrl));
+  if (name) event.tags.push(["name", name]);
+
+  if (guest) {
+    // Sign with a fresh ephemeral key so we never disturb ndk.signer.
+    const signer = NDKPrivateKeySigner.generate();
+    await event.sign(signer);
+    if (name) void publishGuestProfile(signer, name);
+  }
 
   const relays = await event.publish();
   if (relays.size === 0) {
@@ -46,11 +71,30 @@ export async function createEntry(input: {
 
   return {
     id: event.id,
-    author: { pubkey: event.pubkey, displayName: shortName(event.pubkey) },
+    author: {
+      pubkey: event.pubkey,
+      displayName: name || shortName(event.pubkey),
+    },
     message,
     media: imageUrl ? { url: imageUrl, type: "image" } : undefined,
     createdAt: event.created_at ?? Math.floor(Date.now() / 1000),
   };
+}
+
+/** Best-effort kind-0 for a guest's throwaway key so other clients show the name too. */
+async function publishGuestProfile(
+  signer: NDKPrivateKeySigner,
+  name: string,
+): Promise<void> {
+  try {
+    const meta = new NDKEvent(ndk);
+    meta.kind = 0 as unknown as NDKKind;
+    meta.content = JSON.stringify({ name, display_name: name });
+    await meta.sign(signer);
+    await meta.publish();
+  } catch {
+    /* non-critical — the ["name"] tag still drives in-app display */
+  }
 }
 
 /** Pull the image url out of an entry's NIP-92 `imeta` tag, if present. */
@@ -72,18 +116,21 @@ function shortName(pubkey: string): string {
 
 /** Map a kind-1111 entry event to a Post, filling in the author's profile. */
 async function toPost(event: NDKEvent): Promise<Post> {
-  let displayName = shortName(event.pubkey);
+  // A name supplied at sign time (mainly by guests) wins over the profile, and
+  // renders without waiting on a kind-0 round trip.
+  const nameTag = event.tags.find((t) => t[0] === "name")?.[1]?.trim();
+  let displayName = nameTag || shortName(event.pubkey);
   let avatarUrl: string | undefined;
   let nip05: string | undefined;
   try {
     const profile = await ndk.getUser({ pubkey: event.pubkey }).fetchProfile();
     if (profile) {
-      displayName = profile.displayName || profile.name || displayName;
+      if (!nameTag) displayName = profile.displayName || profile.name || displayName;
       avatarUrl = profile.picture || profile.image || undefined;
       nip05 = profile.nip05 || undefined;
     }
   } catch {
-    /* profile unavailable — fall back to the short npub */
+    /* profile unavailable — fall back to the name tag or short npub */
   }
 
   return {
