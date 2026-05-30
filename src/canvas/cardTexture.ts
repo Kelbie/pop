@@ -1,6 +1,8 @@
 import { CanvasSource, Texture } from "pixi.js";
 import type { Post } from "../types/post";
 import { CARD, computeCardGeometry, type CardGeometry } from "./cardGeometry";
+import { CARD_COLORS, CARD_SHADOW_REST_COLOR } from "./cardTheme";
+import { formatRelative } from "../lib/time";
 
 // Device pixel ratio, capped at 2 to bound VRAM (200 tall media cards add up).
 export const DPR = Math.min(
@@ -12,10 +14,10 @@ export const DPR = Math.min(
 // (it lives inside the 24px masonry gap, so it never overlaps neighbours).
 export const SHADOW_MARGIN = 14;
 
-const BG = "#ffffff";
-const TEXT = "#1a1a1a";
-const META = "#9a9a9a";
-const AVATAR_BG = "#e6e6e6";
+const BG = CARD_COLORS.surface;
+const TEXT = CARD_COLORS.ink;
+const META = CARD_COLORS.mutedInk;
+const AVATAR_BG = CARD_COLORS.avatarFill;
 
 // ---- shared image loader with a small concurrency limit -------------------
 
@@ -66,15 +68,6 @@ function roundRectPath(
   ctx.roundRect(x, y, w, h, r);
 }
 
-function formatRelative(createdAt: number): string {
-  // Deterministic-ish relative label; the prototype anchors to a fixed epoch.
-  const now = 1_750_000_000;
-  const d = Math.max(0, now - createdAt);
-  if (d < 3600) return `${Math.floor(d / 60)}m`;
-  if (d < 86400) return `${Math.floor(d / 3600)}h`;
-  return `${Math.floor(d / 86400)}d`;
-}
-
 function drawAvatar(
   ctx: CanvasRenderingContext2D,
   post: Post,
@@ -93,7 +86,7 @@ function drawAvatar(
   } else {
     ctx.fillStyle = AVATAR_BG;
     ctx.fillRect(cx, cy, size, size);
-    ctx.fillStyle = "#8a8a8a";
+    ctx.fillStyle = CARD_COLORS.avatarInk;
     ctx.font = `600 ${Math.round(size * 0.42)}px ${CARD.nameFont.split("px ")[1]}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -119,7 +112,7 @@ function drawCard(
 
   // drop shadow + white card body
   ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.16)";
+  ctx.shadowColor = CARD_SHADOW_REST_COLOR;
   ctx.shadowBlur = 18;
   ctx.shadowOffsetY = 6;
   ctx.fillStyle = BG;
@@ -136,7 +129,8 @@ function drawCard(
   ctx.font = CARD.nameFont;
   ctx.fillText(post.author.displayName, textX, geo.headerY + 17, geo.contentWidth - avatar - 10);
   ctx.fillStyle = META;
-  ctx.font = CARD.metaFont;
+  ctx.font = CARD.stampFont;
+  ctx.letterSpacing = "0.02em";
   const handle = post.author.nip05 ? `${post.author.nip05}` : "";
   ctx.fillText(
     `${handle ? handle + " · " : ""}${formatRelative(post.createdAt)}`,
@@ -144,6 +138,7 @@ function drawCard(
     geo.headerY + 34,
     geo.contentWidth - avatar - 10,
   );
+  ctx.letterSpacing = "0px";
 
   // message
   if (geo.lines.length) {
@@ -174,19 +169,21 @@ function drawCard(
         dh,
       );
     } else {
-      ctx.fillStyle = "#ededed";
+      ctx.fillStyle = CARD_COLORS.mediaPlaceholder;
       ctx.fillRect(padding, geo.mediaY, mw, mh);
     }
     ctx.restore();
   }
 
-  // footer (muted engagement line)
+  // footer (muted engagement line, in the stamp voice)
   ctx.fillStyle = META;
-  ctx.font = CARD.metaFont;
+  ctx.font = CARD.stampFont;
+  ctx.letterSpacing = "0.02em";
   const bits: string[] = [];
   if (post.reactions) bits.push(`♥ ${post.reactions}`);
   if (post.zaps) bits.push(`⚡ ${post.zaps}`);
   if (bits.length) ctx.fillText(bits.join("   "), padding, geo.footerY + 12);
+  ctx.letterSpacing = "0px";
 }
 
 // ---- public: a managed texture per card -----------------------------------

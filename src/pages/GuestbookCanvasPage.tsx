@@ -117,7 +117,7 @@ export function GuestbookCanvasPage({ onClose }: { onClose?: () => void }) {
     : null;
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-[#f2f1ee]">
+    <div className="relative h-screen w-screen overflow-hidden bg-[#f4efeb]">
       <PixiStage
         hostRef={hostRef}
         controllerRef={controllerRef}

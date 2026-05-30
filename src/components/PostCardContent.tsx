@@ -1,12 +1,7 @@
 import type { Post } from "../types/post";
-
-function relative(createdAt: number): string {
-  const now = 1_750_000_000;
-  const d = Math.max(0, now - createdAt);
-  if (d < 3600) return `${Math.floor(d / 60)}m`;
-  if (d < 86400) return `${Math.floor(d / 3600)}h`;
-  return `${Math.floor(d / 86400)}d`;
-}
+import { MONO_STACK } from "../canvas/cardGeometry";
+import { CARD_COLORS } from "../canvas/cardTheme";
+import { formatRelative } from "../lib/time";
 
 /**
  * The real (DOM) rendering of a post. Used for the zoomed-in HtmlCard and the
@@ -27,20 +22,34 @@ export function PostCardContent({
             src={post.author.avatarUrl}
             alt=""
             crossOrigin="anonymous"
-            className="h-10 w-10 shrink-0 rounded-full bg-neutral-200 object-cover"
+            className="h-10 w-10 shrink-0 rounded-full object-cover"
+            style={{ backgroundColor: CARD_COLORS.avatarFill }}
           />
         ) : (
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-sm font-semibold text-neutral-500">
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+            style={{ backgroundColor: CARD_COLORS.avatarFill, color: CARD_COLORS.avatarInk }}
+          >
             {post.author.displayName[0]?.toUpperCase() ?? "?"}
           </div>
         )}
         <div className="min-w-0">
-          <div className="truncate text-[15px] font-semibold leading-tight text-neutral-900">
+          <div
+            className="truncate text-[15px] font-semibold leading-tight"
+            style={{ color: CARD_COLORS.ink }}
+          >
             {post.author.displayName}
           </div>
-          <div className="truncate text-xs text-neutral-400">
+          <div
+            className="truncate text-xs"
+            style={{
+              color: CARD_COLORS.mutedInk,
+              fontFamily: MONO_STACK,
+              letterSpacing: "0.02em",
+            }}
+          >
             {post.author.nip05 ? `${post.author.nip05} · ` : ""}
-            {relative(post.createdAt)}
+            {formatRelative(post.createdAt)}
           </div>
         </div>
       </div>
@@ -48,9 +57,10 @@ export function PostCardContent({
       {post.message && (
         <p
           className={
-            "mt-2.5 whitespace-pre-wrap break-words text-neutral-800 " +
+            "mt-2.5 whitespace-pre-wrap break-words " +
             (large ? "text-base" : "text-sm")
           }
+          style={{ color: CARD_COLORS.ink }}
         >
           {post.message}
         </p>
@@ -61,14 +71,22 @@ export function PostCardContent({
           src={post.media.url}
           alt=""
           crossOrigin="anonymous"
+          loading="lazy"
           className="mt-3 w-full rounded-[10px] object-cover"
-          style={{ maxHeight: large ? 480 : 320 }}
+          style={{
+            maxHeight: large ? 480 : 320,
+            minHeight: 120,
+            backgroundColor: CARD_COLORS.mediaPlaceholder,
+          }}
         />
       )}
 
       {(post.reactions || post.zaps) && (
-        <div className="mt-auto pt-2.5 text-xs text-neutral-400">
-          {post.reactions ? <span className="mr-3">♥ {post.reactions}</span> : null}
+        <div
+          className="mt-auto flex gap-3.5 pt-2.5 text-xs"
+          style={{ color: CARD_COLORS.mutedInk, fontFamily: MONO_STACK, letterSpacing: "0.02em" }}
+        >
+          {post.reactions ? <span>♥ {post.reactions}</span> : null}
           {post.zaps ? <span>⚡ {post.zaps}</span> : null}
         </div>
       )}

@@ -1,5 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import type { CanvasController, LodMode } from "../canvas/CanvasController";
+import {
+  CARD_COLORS,
+  CARD_SHADOW_LIFT,
+  CARD_SHADOW_REST,
+} from "../canvas/cardTheme";
 import { PostCardContent } from "./PostCardContent";
 
 /**
@@ -51,14 +56,21 @@ export function DomOverlay({
               key={id}
               type="button"
               onClick={() => onSelect(id)}
-              className="pop-card-fade pointer-events-auto absolute overflow-hidden rounded-2xl bg-white text-left shadow-[0_6px_18px_rgba(0,0,0,0.16)] transition-opacity"
-              style={{
-                left: rect.x,
-                top: rect.y,
-                width: rect.w,
-                height: rect.h,
-                opacity: dim ? 0.18 : undefined,
-              }}
+              aria-label={`Open note from ${post.author.displayName}`}
+              className="pop-card-fade pop-print pointer-events-auto absolute overflow-hidden rounded-2xl text-left"
+              style={
+                {
+                  left: rect.x,
+                  top: rect.y,
+                  width: rect.w,
+                  height: rect.h,
+                  opacity: dim ? 0.18 : undefined,
+                  "--print-surface": CARD_COLORS.surface,
+                  "--print-shadow-rest": CARD_SHADOW_REST,
+                  "--print-shadow-lift": CARD_SHADOW_LIFT,
+                  "--print-ring": CARD_COLORS.ink,
+                } as CSSProperties
+              }
             >
               <PostCardContent post={post} />
             </button>

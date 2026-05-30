@@ -49,10 +49,38 @@ body,
   animation: popModalPop 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+/* A post card behaves like a print resting on the wall: soft ambient shadow at
+   rest, lifting a touch on hover/keyboard-focus. Colors/shadows come in as CSS
+   vars from the single source of truth (cardTheme.ts). */
+.pop-print {
+  background-color: var(--print-surface);
+  box-shadow: var(--print-shadow-rest);
+  transition:
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 160ms ease-out;
+}
+.pop-print:hover,
+.pop-print:focus-visible {
+  box-shadow: var(--print-shadow-lift);
+  transform: translateY(-2px);
+}
+.pop-print:focus-visible {
+  outline: 2px solid var(--print-ring);
+  outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pop-card-fade,
   .pop-modal-fade,
   .pop-modal-pop {
     animation: none;
+  }
+  .pop-print {
+    transition: none;
+  }
+  .pop-print:hover,
+  .pop-print:focus-visible {
+    transform: none;
   }
 }
