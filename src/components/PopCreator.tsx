@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createPop, fetchPops, type Pop } from "../lib/pop";
+import { ImageCropField } from "./ImageCropField";
 
 export function PopCreator({ host }: { host: string }) {
   const [pops, setPops] = useState<Pop[] | null>(null);
@@ -29,10 +30,13 @@ function CreatePopForm() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [picture, setPicture] = useState<string | null>(null);
+  const [banner, setBanner] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = name.trim().length > 0 && !submitting;
+  const canSubmit = name.trim().length > 0 && uploading === 0 && !submitting;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,6 +47,8 @@ function CreatePopForm() {
       const pop = await createPop({
         name: name.trim(),
         description: description.trim(),
+        picture: picture ?? undefined,
+        banner: banner ?? undefined,
       });
       navigate(`/e/${pop.nevent}`);
     } catch (err) {
@@ -81,6 +87,22 @@ function CreatePopForm() {
         />
       </label>
 
+      <ImageCropField
+        label="Cover picture"
+        aspect={1}
+        value={picture}
+        onChange={setPicture}
+        onUploadingChange={(up) => setUploading((n) => n + (up ? 1 : -1))}
+      />
+
+      <ImageCropField
+        label="Banner"
+        aspect={4 / 3}
+        value={banner}
+        onChange={setBanner}
+        onUploadingChange={(up) => setUploading((n) => n + (up ? 1 : -1))}
+      />
+
       {error && <p className="text-sm text-red-500">{error}</p>}
 
       <button
@@ -115,13 +137,22 @@ function PopList({ pops, loading }: { pops: Pop[]; loading: boolean }) {
             key={pop.id}
             className="rounded-xl border border-hairline bg-polaroid p-4 shadow-sm transition hover:shadow-[0_8px_28px_rgba(36,30,26,0.10)]"
           >
-            <Link to={`/e/${pop.nevent}`} className="block">
-              <h3 className="font-medium text-ink hover:underline">{pop.name}</h3>
-              {pop.description && (
-                <p className="mt-1 text-sm text-muted">
-                  {pop.description}
-                </p>
+            <Link to={`/e/${pop.nevent}`} className="flex items-start gap-3">
+              {pop.picture && (
+                <img
+                  src={pop.picture}
+                  alt=""
+                  className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                />
               )}
+              <div className="min-w-0">
+                <h3 className="font-medium text-ink hover:underline">{pop.name}</h3>
+                {pop.description && (
+                  <p className="mt-1 text-sm text-muted">
+                    {pop.description}
+                  </p>
+                )}
+              </div>
             </Link>
             <CopyLink nevent={pop.nevent} />
           </li>

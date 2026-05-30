@@ -19,6 +19,8 @@ const fmtSats = new Intl.NumberFormat("en-US");
  */
 export function EventTopBar({
   title,
+  picture,
+  banner,
   hostHex,
   query,
   onQueryChange,
@@ -27,6 +29,10 @@ export function EventTopBar({
   onLoginClick,
 }: {
   title?: string;
+  /** Pop's own 1:1 cover picture — used as the event avatar when present. */
+  picture?: string;
+  /** Pop's own 4:3 banner — rendered behind the bar when present. */
+  banner?: string;
   hostHex: string;
   query: string;
   onQueryChange: (v: string) => void;
@@ -36,6 +42,8 @@ export function EventTopBar({
 }) {
   const { displayName, avatar } = useProfile(hostHex);
   const eventName = title || displayName;
+  // The Pop's own cover picture wins over the host's profile avatar.
+  const eventAvatar = picture || avatar;
 
   return (
     // pointer-events-none lets the wall stay grabbable in the gaps; each
@@ -63,55 +71,71 @@ export function EventTopBar({
 
       {/* Event placard — the centerpiece */}
       <div className="mt-1 flex justify-center px-3 sm:mt-2">
-        <div className="pop-placard-in pointer-events-auto w-full max-w-md rounded-2xl border border-hairline bg-polaroid/85 px-5 py-4 text-center shadow-[0_8px_28px_rgba(36,30,26,0.12)] backdrop-blur-md sm:px-7 sm:py-5">
-          {avatar ? (
-            <img
-              src={avatar}
-              alt=""
-              className="mx-auto h-12 w-12 rounded-full object-cover ring-2 ring-hairline sm:h-14 sm:w-14"
-            />
-          ) : (
-            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-avatar text-lg font-bold text-avatar-ink sm:h-14 sm:w-14">
-              {eventName.slice(0, 1).toUpperCase()}
-            </span>
+        <div className="pop-placard-in pointer-events-auto relative w-full max-w-md overflow-hidden rounded-2xl border border-hairline bg-polaroid/85 px-5 py-4 text-center shadow-[0_8px_28px_rgba(36,30,26,0.12)] backdrop-blur-md sm:px-7 sm:py-5">
+          {/* The host's banner, if any, washes warmly behind the placard. */}
+          {banner && (
+            <>
+              <img
+                src={banner}
+                alt=""
+                aria-hidden
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-polaroid/80 backdrop-blur-md" />
+            </>
           )}
 
-          <h1 className="mt-2.5 line-clamp-2 text-balance text-xl font-bold leading-tight tracking-tight text-ink sm:text-2xl">
-            {eventName}
-          </h1>
-          {title && (
-            <p className="mt-0.5 truncate font-mono text-xs text-muted">
-              Hosted by {displayName}
-            </p>
-          )}
+          <div className="relative">
+            {eventAvatar ? (
+              <img
+                src={eventAvatar}
+                alt=""
+                className="mx-auto h-12 w-12 rounded-full object-cover ring-2 ring-hairline sm:h-14 sm:w-14"
+              />
+            ) : (
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-avatar text-lg font-bold text-avatar-ink sm:h-14 sm:w-14">
+                {eventName.slice(0, 1).toUpperCase()}
+              </span>
+            )}
 
-          {hostHex && <ZapTotals hex={hostHex} />}
+            <h1 className="mt-2.5 line-clamp-2 text-balance text-xl font-bold leading-tight tracking-tight text-ink sm:text-2xl">
+              {eventName}
+            </h1>
+            {title && (
+              <p className="mt-0.5 truncate font-mono text-xs text-muted">
+                Hosted by {displayName}
+              </p>
+            )}
 
-          <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={onSign}
-              className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-polaroid transition hover:bg-avatar-ink active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-            >
-              Sign the guestbook
-            </button>
-            {onZap && (
+            {hostHex && <ZapTotals hex={hostHex} />}
+
+            <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
               <button
                 type="button"
-                onClick={onZap}
-                className="flex items-center gap-1.5 rounded-full border border-hairline bg-polaroid px-4 py-2 text-sm font-semibold text-ink transition hover:bg-paper active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                onClick={onSign}
+                className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-polaroid transition hover:bg-avatar-ink active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
               >
-                <span aria-hidden>⚡</span>
-                Zap
+                Sign the guestbook
               </button>
-            )}
-            <ShareButton title={eventName} />
+              {onZap && (
+                <button
+                  type="button"
+                  onClick={onZap}
+                  className="flex items-center gap-1.5 rounded-full border border-hairline bg-polaroid px-4 py-2 text-sm font-semibold text-ink transition hover:bg-paper active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                >
+                  <span aria-hidden>⚡</span>
+                  Zap
+                </button>
+              )}
+              <ShareButton title={eventName} />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Search on small screens, below the placard */}
       <div className="pointer-events-auto mt-2 px-3 md:hidden">
+
         <SearchPill value={query} onChange={onQueryChange} className="w-full" />
       </div>
     </header>

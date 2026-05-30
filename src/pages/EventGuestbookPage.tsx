@@ -116,6 +116,8 @@ function EventGuestbook({
       {/* Floating chrome */}
       <EventTopBar
         title={pop.name}
+        picture={pop.picture}
+        banner={pop.banner}
         hostHex={recipient?.hex ?? ""}
         query={query}
         onQueryChange={setQuery}
