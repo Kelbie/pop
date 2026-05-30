@@ -2,7 +2,7 @@ import { CanvasSource, Texture } from "pixi.js";
 import type { Post } from "../types/post";
 import { CARD, computeCardGeometry, type CardGeometry } from "./cardGeometry";
 import { CARD_COLORS, CARD_GOLD, CARD_SHADOW_REST_COLOR } from "./cardTheme";
-import { slashesForRank } from "../lib/medals";
+import { starsForRank } from "../lib/medals";
 import { formatRelative } from "../lib/time";
 import { proxyImage } from "../lib/img";
 
@@ -145,8 +145,24 @@ function drawCard(
     ctx.restore();
   }
 
-  // header: avatar + name + meta
+  // header: avatar + name + meta. A top-three patron gets gold star rank marks
+  // (★★★ 1st, ★★ 2nd, ★ 3rd) in the top-right, aligned with the avatar + name.
   drawAvatar(ctx, post, padding, geo.headerY, avatar, images.avatar);
+  const stars = starsForRank(badge.medal);
+  if (stars) {
+    const outer = 6; // star radius
+    const step = outer * 2 + 3; // centre-to-centre spacing
+    const rightEdge = padding + geo.contentWidth;
+    const cy = geo.headerY + avatar / 2;
+    ctx.save();
+    ctx.strokeStyle = CARD_GOLD.ring;
+    ctx.lineWidth = 1;
+    ctx.lineJoin = "round";
+    for (let i = 0; i < stars; i++) {
+      drawStar(ctx, rightEdge - outer - i * step, cy, outer);
+    }
+    ctx.restore();
+  }
   const textX = padding + avatar + 10;
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
@@ -200,30 +216,7 @@ function drawCard(
     ctx.restore();
   }
 
-  // footer (engagement line, in the stamp voice). A top-three patron leads with
-  // gold slash marks: /// 1st, // 2nd, / 3rd.
-  let x = padding;
-  const slashes = slashesForRank(badge.medal);
-  if (slashes) {
-    const h = 11; // slash height
-    const slant = 4; // horizontal run of the diagonal
-    const gap = 5; // spacing between slashes
-    const top = geo.footerY + 2;
-    ctx.save();
-    ctx.strokeStyle = CARD_GOLD.ring;
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
-    for (let i = 0; i < slashes; i++) {
-      const sx = x + i * gap;
-      ctx.beginPath();
-      ctx.moveTo(sx, top + h);
-      ctx.lineTo(sx + slant, top);
-      ctx.stroke();
-    }
-    ctx.restore();
-    x += (slashes - 1) * gap + slant + 12;
-  }
-
+  // footer (engagement line, in the stamp voice).
   ctx.font = CARD.stampFont;
   ctx.letterSpacing = "0.02em";
   const bits: string[] = [];
@@ -231,9 +224,30 @@ function drawCard(
   if (post.zaps) bits.push(`⚡ ${post.zaps}`);
   if (bits.length) {
     ctx.fillStyle = META;
-    ctx.fillText(bits.join("   "), x, geo.footerY + 12);
+    ctx.fillText(bits.join("   "), padding, geo.footerY + 12);
   }
   ctx.letterSpacing = "0px";
+}
+
+/** Outline a 5-point star centred at (cx, cy) with the given outer radius. */
+function drawStar(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  outer: number,
+) {
+  const inner = outer * 0.5;
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 === 0 ? outer : inner;
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const px = cx + Math.cos(a) * r;
+    const py = cy + Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.stroke();
 }
 
 // ---- public: a managed texture per card -----------------------------------

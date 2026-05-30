@@ -41,8 +41,8 @@ export function Header({ onLoginClick }: HeaderProps) {
             alt="Pop logo"
             className="h-8 w-8 rounded-lg"
           />
-          <span className="text-xl font-light tracking-tight text-ink">
-            Pop
+          <span className="text-xl font-bold tracking-tight text-ink">
+            POP
           </span>
         </Link>
 

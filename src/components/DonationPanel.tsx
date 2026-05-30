@@ -1,8 +1,8 @@
 import type { NDKEvent } from "@nostr-dev-kit/ndk";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { DonorRow } from "./DonorRow";
-import { useDonations } from "../hooks/useDonations";
+import { useDonations, type Donation } from "../hooks/useDonations";
 import { useProfile } from "../hooks/useProfile";
 import { ndk } from "../lib/ndk";
 import { buildSignedZapRequest, fetchZapInvoice } from "../lib/npubcash";
@@ -30,6 +30,26 @@ export function DonationPanel({
 }) {
   const { totalSats, count, donations, loading } = useDonations(hex);
   const { displayName, avatar } = useProfile(hex);
+
+  // Group zaps by sender (anonymous zaps stay separate) and rank by total sats.
+  const ranked = useMemo(() => {
+    const bySender = new Map<string, Donation>();
+    const anonymous: Donation[] = [];
+    for (const d of donations) {
+      if (!d.senderHex) {
+        anonymous.push(d);
+        continue;
+      }
+      const existing = bySender.get(d.senderHex);
+      if (existing) {
+        existing.sats += d.sats;
+        existing.createdAt = Math.max(existing.createdAt, d.createdAt);
+      } else {
+        bySender.set(d.senderHex, { ...d });
+      }
+    }
+    return [...bySender.values(), ...anonymous].sort((a, b) => b.sats - a.sats);
+  }, [donations]);
 
   return (
     <div>
@@ -74,14 +94,14 @@ export function DonationPanel({
       {/* Zap flow */}
       <ZapBox hex={hex} npub={npub} />
 
-      {/* Donor list */}
-      {donations.length > 0 && (
+      {/* Donor list — grouped by zapper, ranked by total sats */}
+      {ranked.length > 0 && (
         <div className="mt-8 space-y-2">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
-            Recent donations
+            Top zappers
           </h2>
-          {donations.map((d) => (
-            <DonorRow key={d.id} donation={d} />
+          {ranked.map((d) => (
+            <DonorRow key={d.senderHex ?? d.id} donation={d} />
           ))}
         </div>
       )}
