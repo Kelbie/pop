@@ -2,7 +2,7 @@ import NDK from "@nostr-dev-kit/ndk";
 
 const RELAYS = (import.meta.env.VITE_RELAYS ?? "wss://relay.damus.io,wss://nos.lol")
   .split(",")
-  .map((r) => r.trim())
+  .map((r: string) => r.trim())
   .filter(Boolean);
 
 export const ndk = new NDK({ explicitRelayUrls: RELAYS });
