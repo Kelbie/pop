@@ -1,0 +1,5 @@
+# Pin the build toolchain. Nixpacks otherwise defaults to Node 18, which
+# nixpkgs has removed (EOL), breaking the Railway build. We use Bun for the
+# build/preview commands (see railway.json) and Node 22 (LTS) as the runtime.
+[phases.setup]
+nixPkgs = ["nodejs_22", "bun"]
