@@ -4,6 +4,7 @@ import { DEFAULT_NOSTRCONNECT_RELAY, useAuthStore } from "../store/auth";
 import { Modal } from "./Modal";
 
 type Tab = "extension" | "bunker" | "nsec";
+type Mode = "login" | "signup";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "extension", label: "Extension" },
@@ -16,8 +17,21 @@ interface LoginModalProps {
   onClose: () => void;
 }
 
+/**
+ * Decide which rail to open on. Returning visitors (an installed signer
+ * extension, or a previously stored session) land on login; first-time
+ * visitors with no Nostr footprint land on signup.
+ */
+function pickInitialMode(): Mode {
+  if (typeof window === "undefined") return "login";
+  const hasExtension = !!window.nostr;
+  const hasStoredSession = !!window.localStorage.getItem("pop-auth");
+  return hasExtension || hasStoredSession ? "login" : "signup";
+}
+
 export function LoginModal({ open, onClose }: LoginModalProps) {
-  // Default to the extension tab when present, otherwise nudge toward the remote signer.
+  const [mode, setMode] = useState<Mode>(pickInitialMode);
+  // Within the login rail, default to the extension tab when present.
   const [tab, setTab] = useState<Tab>(() =>
     typeof window !== "undefined" && window.nostr ? "extension" : "bunker",
   );
@@ -26,31 +40,77 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     <Modal
       open={open}
       onClose={onClose}
-      title="Log in"
-      subtitle="Sign in to Pop with your Nostr account."
+      title={mode === "login" ? "Log in" : "Create account"}
+      subtitle={
+        mode === "login"
+          ? "Sign in to Pop with your Nostr account."
+          : "New to Nostr? Get set up in seconds."
+      }
     >
-      <div className="mb-5 flex gap-1 rounded-xl bg-neutral-800/60 p-1">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={
-              "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition " +
-              (tab === t.id
-                ? "bg-neutral-700 text-neutral-100 shadow"
-                : "text-neutral-400 hover:text-neutral-200")
-            }
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {mode === "login" ? (
+        <>
+          <div className="mb-5 flex gap-1 rounded-xl bg-neutral-800/60 p-1">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                className={
+                  "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition " +
+                  (tab === t.id
+                    ? "bg-neutral-700 text-neutral-100 shadow"
+                    : "text-neutral-400 hover:text-neutral-200")
+                }
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
 
-      {tab === "extension" && <ExtensionTab onClose={onClose} />}
-      {tab === "bunker" && <BunkerTab onClose={onClose} />}
-      {tab === "nsec" && <NsecTab onClose={onClose} />}
+          {tab === "extension" && <ExtensionTab onClose={onClose} />}
+          {tab === "bunker" && <BunkerTab onClose={onClose} />}
+          {tab === "nsec" && <NsecTab onClose={onClose} />}
+
+          <ModeSwitch
+            prompt="New to Nostr?"
+            action="Create an account"
+            onClick={() => setMode("signup")}
+          />
+        </>
+      ) : (
+        <>
+          <CreateTab onClose={onClose} />
+          <ModeSwitch
+            prompt="Already have an account?"
+            action="Log in"
+            onClick={() => setMode("login")}
+          />
+        </>
+      )}
     </Modal>
+  );
+}
+
+function ModeSwitch({
+  prompt,
+  action,
+  onClick,
+}: {
+  prompt: string;
+  action: string;
+  onClick: () => void;
+}) {
+  return (
+    <p className="mt-5 border-t border-neutral-800 pt-4 text-center text-sm text-neutral-400">
+      {prompt}{" "}
+      <button
+        type="button"
+        onClick={onClick}
+        className="font-medium text-indigo-400 hover:underline"
+      >
+        {action}
+      </button>
+    </p>
   );
 }
 
@@ -78,6 +138,88 @@ function PrimaryButton({
     >
       {loading ? "Connecting…" : children}
     </button>
+  );
+}
+
+function KeyField({ label, value }: { label: string; value: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between">
+        <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+          {label}
+        </label>
+        <button
+          type="button"
+          onClick={copy}
+          className="text-xs text-indigo-400 hover:underline"
+        >
+          {copied ? "Copied!" : "Copy"}
+        </button>
+      </div>
+      <p className="break-all rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 font-mono text-xs text-neutral-200">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function CreateTab({ onClose }: { onClose: () => void }) {
+  const createAccount = useAuthStore((s) => s.createAccount);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [keys, setKeys] = useState<{ nsec: string; npub: string } | null>(null);
+
+  const create = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      setKeys(await createAccount());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not create account.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (keys) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-xl border border-amber-900/60 bg-amber-950/40 px-4 py-3 text-sm text-amber-200">
+          🔑 This is your new account. Save your private key (
+          <span className="font-mono">nsec</span>) somewhere safe — it's the{" "}
+          <strong>only</strong> way to log back in, and it can never be
+          recovered if lost. Never share it with anyone.
+        </div>
+        <KeyField label="Public key (share this)" value={keys.npub} />
+        <KeyField label="Private key (keep secret)" value={keys.nsec} />
+        <PrimaryButton onClick={onClose}>
+          I've saved my key — continue
+        </PrimaryButton>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-neutral-300">
+        New to Nostr? Create an account in one click. A private key is generated
+        right here in your browser — it's never sent to any server.
+      </p>
+      <PrimaryButton onClick={create} loading={loading}>
+        Create my account
+      </PrimaryButton>
+      {error && <ErrorNote message={error} />}
+    </div>
   );
 }
 

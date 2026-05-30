@@ -3,6 +3,7 @@ import {
   NDKNip46Signer,
   NDKPrivateKeySigner,
   ndkSignerFromPayload,
+  nip19,
   type NDKSigner,
   type NDKUserProfile,
 } from "@nostr-dev-kit/ndk";
@@ -32,6 +33,8 @@ interface AuthState {
 
   loginWithExtension: () => Promise<void>;
   loginWithNsec: (nsec: string) => Promise<void>;
+  /** Generate a brand-new keypair, sign in with it, and return the keys to surface to the user. */
+  createAccount: () => Promise<{ nsec: string; npub: string }>;
   loginWithBunkerUrl: (uri: string) => Promise<void>;
   /** Begins a nostrconnect:// flow: returns the URI to render as a QR plus a promise that resolves on connect. */
   startNostrConnect: (relay?: string) => { uri: string; ready: Promise<void> };
@@ -101,6 +104,21 @@ export const useAuthStore = create<AuthState>()(
         try {
           // NDK accepts the nsec string directly; do not decode it first.
           await activate(set, new NDKPrivateKeySigner(trimmed), "nsec");
+        } catch (err) {
+          set({ status: get().pubkey ? "authenticated" : "anonymous" });
+          throw err;
+        }
+      },
+
+      createAccount: async () => {
+        set({ status: "connecting" });
+        try {
+          // Key is generated locally and never leaves the browser.
+          const signer = NDKPrivateKeySigner.generate();
+          const nsec = signer.nsec;
+          await activate(set, signer, "nsec");
+          const npub = nip19.npubEncode(get().pubkey!);
+          return { nsec, npub };
         } catch (err) {
           set({ status: get().pubkey ? "authenticated" : "anonymous" });
           throw err;
