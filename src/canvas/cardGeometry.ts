@@ -10,6 +10,12 @@ import type { Post } from "../types/post";
 export const FONT_STACK =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
 
+// The "stamp" voice — a monospace date-stamp for handles, timestamps, and the
+// engagement footer. System monospace only, so the canvas measures with final
+// metrics (no web-font load). See DESIGN.md §3 (The Stamp Rule).
+export const MONO_STACK =
+  'ui-monospace, SFMono-Regular, Menlo, "Cascadia Mono", monospace';
+
 export const CARD = {
   width: 320,
   padding: 16,
@@ -18,6 +24,7 @@ export const CARD = {
   headerGap: 10,
   nameFont: `600 15px ${FONT_STACK}`,
   metaFont: `400 12px ${FONT_STACK}`,
+  stampFont: `400 12px ${MONO_STACK}`,
   messageFont: `400 14px ${FONT_STACK}`,
   messageLineHeight: 20,
   maxMessageLines: 8,

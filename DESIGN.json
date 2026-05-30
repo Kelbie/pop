@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-30T00:00:00.000Z",
+  "title": "Design System: Pop",
+  "extensions": {
+    "colorMeta": {
+      "terracotta": {
+        "role": "primary",
+        "displayName": "Terracotta Clay",
+        "canonical": "oklch(57% 0.14 38)",
+        "tonalRamp": [
+          "oklch(22% 0.06 38)",
+          "oklch(32% 0.09 38)",
+          "oklch(42% 0.12 38)",
+          "oklch(50% 0.145 38)",
+          "oklch(57% 0.14 38)",
+          "oklch(68% 0.11 40)",
+          "oklch(80% 0.07 45)",
+          "oklch(92% 0.03 50)"
+        ]
+      },
+      "flash-gold": {
+        "role": "secondary",
+        "displayName": "Flash Gold",
+        "canonical": "oklch(82% 0.12 80)",
+        "tonalRamp": [
+          "oklch(30% 0.05 80)",
+          "oklch(42% 0.07 80)",
+          "oklch(54% 0.09 80)",
+          "oklch(66% 0.11 80)",
+          "oklch(75% 0.12 80)",
+          "oklch(82% 0.12 80)",
+          "oklch(90% 0.08 80)",
+          "oklch(96% 0.04 80)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "oklch(95.5% 0.008 60)",
+        "tonalRamp": [
+          "oklch(24% 0.012 60)",
+          "oklch(38% 0.011 60)",
+          "oklch(52% 0.01 60)",
+          "oklch(66% 0.009 60)",
+          "oklch(78% 0.008 60)",
+          "oklch(88% 0.008 60)",
+          "oklch(95.5% 0.008 60)",
+          "oklch(98.5% 0.005 75)"
+        ]
+      },
+      "polaroid-white": {
+        "role": "neutral",
+        "displayName": "Polaroid White",
+        "canonical": "oklch(98.5% 0.005 75)",
+        "tonalRamp": [
+          "oklch(24% 0.012 50)",
+          "oklch(40% 0.01 55)",
+          "oklch(55% 0.009 55)",
+          "oklch(70% 0.008 60)",
+          "oklch(82% 0.007 65)",
+          "oklch(91% 0.006 70)",
+          "oklch(96% 0.005 72)",
+          "oklch(98.5% 0.005 75)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(24% 0.012 50)",
+        "tonalRamp": [
+          "oklch(18% 0.012 50)",
+          "oklch(24% 0.012 50)",
+          "oklch(34% 0.013 52)",
+          "oklch(44% 0.014 54)",
+          "oklch(52% 0.014 55)",
+          "oklch(66% 0.012 58)",
+          "oklch(80% 0.009 60)",
+          "oklch(90% 0.007 62)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The 'Pop' wordmark and home hero only." },
+      "title": { "displayName": "Title", "purpose": "Author display name on a card — the loudest line on a print." },
+      "body": { "displayName": "Body", "purpose": "Message text; measured by the canvas before paint." },
+      "label": { "displayName": "Stamp", "purpose": "Monospace timestamps and handles — the date-stamp voice." }
+    },
+    "shadows": [
+      { "name": "print-rest", "value": "0 6px 18px oklch(30% 0.02 50 / 0.16)", "purpose": "Cards, search pill, controls at rest — a print resting on the wall." },
+      { "name": "print-lifted", "value": "0 12px 28px oklch(30% 0.02 50 / 0.20)", "purpose": "Hover/focus on a card, paired with translateY(-2px); the detail print." }
+    ],
+    "motion": [
+      { "name": "ease-out-quint", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Default easing for lifts, reveals, and pill/control transitions." },
+      { "name": "flash-and-settle", "value": "180ms cubic-bezier(0.33, 1, 0.68, 1)", "purpose": "A new note landing on the wall and the detail-view pop — the camera firing." },
+      { "name": "state", "value": "150ms ease-out", "purpose": "Button and input color/border state changes." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "The Print (Post Card)",
+      "kind": "card",
+      "refersTo": "card-post",
+      "description": "The signature component — a guest's note + optional photo, a warm-white print resting on the paper wall.",
+      "html": "<article class=\"ds-print\"><header class=\"ds-print-head\"><div class=\"ds-avatar\">S</div><div class=\"ds-meta\"><div class=\"ds-name\">satoshi</div><div class=\"ds-stamp\">satoshi@pop.example · 2h</div></div></header><p class=\"ds-msg\">what a night. thank you for having us — the lights, the music, all of it.</p><div class=\"ds-photo\"></div><footer class=\"ds-foot\"><span>♥ 12</span><span>⚡ 5</span></footer></article>",
+      "css": ".ds-print{width:320px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;padding:16px;background:oklch(98.5% 0.005 75);border-radius:16px;box-shadow:0 6px 18px oklch(30% 0.02 50 / 0.16);transition:box-shadow .18s cubic-bezier(.22,1,.36,1),transform .18s cubic-bezier(.22,1,.36,1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif}.ds-print:hover{box-shadow:0 12px 28px oklch(30% 0.02 50 / 0.20);transform:translateY(-2px)}.ds-print-head{display:flex;align-items:center;gap:10px}.ds-avatar{width:40px;height:40px;flex:none;border-radius:9999px;background:oklch(88% 0.008 55);color:oklch(52% 0.014 55);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px}.ds-name{font-size:15px;font-weight:600;color:oklch(24% 0.012 50);line-height:1.2}.ds-stamp{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;letter-spacing:.02em;color:oklch(52% 0.014 55);margin-top:2px}.ds-msg{margin:0;font-size:14px;line-height:20px;color:oklch(24% 0.012 50)}.ds-photo{height:150px;border-radius:10px;background:linear-gradient(135deg,oklch(80% 0.07 45),oklch(72% 0.09 60))}.ds-foot{display:flex;gap:14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:oklch(52% 0.014 55)}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The loudest action on a screen — Log in, Create a Pop, Sign.",
+      "html": "<button class=\"ds-btn-primary\">Sign the guestbook</button>",
+      "css": ".ds-btn-primary{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:14px;font-weight:600;color:oklch(98.5% 0.005 75);background:oklch(57% 0.14 38);border:none;border-radius:12px;padding:10px 16px;cursor:pointer;transition:background .15s ease-out,transform .15s ease-out}.ds-btn-primary:hover{background:oklch(50% 0.145 38)}.ds-btn-primary:active{transform:translateY(1px)}.ds-btn-primary:focus-visible{outline:2px solid oklch(57% 0.14 38);outline-offset:2px}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary actions — 'View the guestbook →', Back.",
+      "html": "<button class=\"ds-btn-ghost\">View the guestbook →</button>",
+      "css": ".ds-btn-ghost{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:14px;font-weight:600;color:oklch(24% 0.012 50);background:oklch(95.5% 0.008 60);border:1px solid oklch(89% 0.008 55);border-radius:12px;padding:10px 16px;cursor:pointer;transition:border-color .15s ease-out,background .15s ease-out}.ds-btn-ghost:hover{border-color:oklch(57% 0.14 38);color:oklch(50% 0.145 38)}.ds-btn-ghost:focus-visible{outline:2px solid oklch(57% 0.14 38);outline-offset:2px}"
+    },
+    {
+      "name": "Search Pill",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "Floating top-center search over the wall; filters by dimming non-matches.",
+      "html": "<div class=\"ds-search\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\"><circle cx=\"11\" cy=\"11\" r=\"7\" stroke=\"currentColor\" stroke-width=\"2\"/><path d=\"m20 20-3-3\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg><input placeholder=\"Search the guestbook…\"/></div>",
+      "css": ".ds-search{display:inline-flex;align-items:center;gap:8px;background:oklch(98.5% 0.005 75 / 0.9);border:1px solid oklch(89% 0.008 55);border-radius:9999px;padding:8px 16px;box-shadow:0 6px 18px oklch(30% 0.02 50 / 0.16);backdrop-filter:blur(8px);color:oklch(52% 0.014 55)}.ds-search input{border:none;background:transparent;outline:none;width:224px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:14px;color:oklch(24% 0.012 50)}.ds-search input::placeholder{color:oklch(52% 0.014 55)}.ds-search:focus-within{border-color:oklch(57% 0.14 38)}"
+    },
+    {
+      "name": "Control Button",
+      "kind": "button",
+      "refersTo": "control-button",
+      "description": "Edge utility chrome — zoom in/out, fit-all, back.",
+      "html": "<button class=\"ds-control\" aria-label=\"Zoom in\">+</button>",
+      "css": ".ds-control{width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:oklch(98.5% 0.005 75 / 0.9);color:oklch(24% 0.012 50);border:none;border-radius:8px;box-shadow:0 6px 18px oklch(30% 0.02 50 / 0.16);cursor:pointer;font-size:18px;transition:background .15s ease-out}.ds-control:hover{background:oklch(98.5% 0.005 75)}.ds-control:focus-visible{outline:2px solid oklch(57% 0.14 38);outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Disposable Camera",
+    "overview": "Pop is the digital shoebox of party photos and scribbled notes you find months later and can't stop smiling at. The whole system is built around the feeling of a disposable camera at an event: of-the-moment, a little imperfect, flash-lit and warm, and unmistakably physical. Notes and photos land on the wall like prints fresh out of the envelope. The interface is the envelope and the table they're spread across, never the subject. The palette is warm to the core — candlelit paper, polaroid-white prints, ink that's never pure black, and a single terracotta accent that does the work a date-stamp does in the corner of a film print. Motion is the one place delight gets loud: a new note arrives with a quick flash-and-settle. Everywhere else, restraint.",
+    "keyCharacteristics": [
+      "Warm paper world, top to bottom — no dark mode, no cool grays.",
+      "One earthy terracotta accent, used sparingly like a date-stamp.",
+      "Soft physical depth: prints resting on a surface, lifting slightly when touched.",
+      "System fonts only (no web-font load) so the canvas measures with final metrics.",
+      "Playfulness lives in motion; stillness everywhere else."
+    ],
+    "rules": [
+      { "name": "The Date-Stamp Rule", "body": "Terracotta is a date-stamp, not a coat of paint. It appears on ≤10% of any screen — one accent moment per view, no terracotta panels, no terracotta-tinted cards.", "section": "colors" },
+      { "name": "The No-Cold-Gray Rule", "body": "There are no cool neutrals in Pop. Every gray is tinted warm (hue 50–75, chroma ≥0.005). A neutral that reads blue or slate is a bug.", "section": "colors" },
+      { "name": "The Stamp Rule", "body": "Timestamps and nip05 handles render in the monospace label voice, in Muted Ink — the camera's date-stamp, never competing with the name or message.", "section": "typography" },
+      { "name": "The Resting-Print Rule", "body": "Surfaces are flat-warm at rest with only their ambient print shadow. Extra elevation is a response to interaction (hover, focus, selection), never decoration.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the whole app on the warm Paper/Polaroid-White world — one coherent keepsake, no dark mode.",
+      "Do tint every neutral toward hue 50–75 (chroma ≥0.005). Warm grays only.",
+      "Do spend Terracotta like a date-stamp: ≤10% of any view, one accent moment.",
+      "Do give cards the Resting-Print shadow at rest and lift them 2px only on hover/focus.",
+      "Do render timestamps and handles in the monospace Stamp voice, Muted Ink.",
+      "Do mirror every card change across cardTexture.ts, PostCardContent.tsx, and cardGeometry.ts.",
+      "Do keep contributions the brightest, loudest thing on screen; let chrome recede.",
+      "Do confine playful, flash-gold motion to genuine moments (a note landing, a zap)."
+    ],
+    "donts": [
+      "Don't reintroduce the dark crypto app look — no neon-on-black, no glowing gradients, no cyberpunk grids, no indigo. Zaps are gifts, not transactions.",
+      "Don't let the wall become a generic social feed — no uniform stacked single-column cards, no like/repost/comment bars, no blue checks.",
+      "Don't drift into a corporate SaaS dashboard — no flat gray cards, no data tables, no charts.",
+      "Don't ship AI slop — no identical card grids, no glassmorphism, no gradient text, no hero-metric templates.",
+      "Don't use a border-left/border-right colored stripe as an accent; selection is a full 2px Terracotta ring.",
+      "Don't use pure #000 or #fff, or any cool/slate gray.",
+      "Don't let Muted Ink drift back toward the old #9a9a9a — it fails AA on Polaroid White.",
+      "Don't introduce a web font on the canvas path; it reflows and clips measured cards."
+    ]
+  }
+}

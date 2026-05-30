@@ -110,7 +110,7 @@ export function GuestbookCanvas({
     : null;
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[#f2f1ee]">
+    <div className="relative h-full w-full overflow-hidden bg-[#f4efeb]">
       <PixiStage
         hostRef={hostRef}
         controllerRef={controllerRef}
