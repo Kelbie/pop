@@ -37,7 +37,7 @@ export function Header({ onLoginClick }: HeaderProps) {
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
         <Link to="/" className="flex items-center gap-2">
           <img
-            src="/logo-dark.jpeg"
+            src="/pop.png"
             alt="Pop logo"
             className="h-8 w-8 rounded-lg"
           />
