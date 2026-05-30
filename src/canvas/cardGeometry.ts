@@ -4,17 +4,19 @@ import type { Post } from "../types/post";
 // exact height up front) and the texture drawer (needs the wrapped lines /
 // media box) call computeCardGeometry, so they can never disagree and clip.
 //
-// We deliberately use system fonts (no web-font load) so the first layout uses
+// Card text uses the Velvelyne web font (see src/index.css). main.tsx awaits
+// the font before the first render, so the first layout already measures with
 // final metrics — no font-swap reflow.
 
 export const FONT_STACK =
-  '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
+  '"Velvelyne", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
 
-// The "stamp" voice — a monospace date-stamp for handles, timestamps, and the
-// engagement footer. System monospace only, so the canvas measures with final
-// metrics (no web-font load). See DESIGN.md §3 (The Stamp Rule).
+// The "stamp" voice — for handles, timestamps, and the engagement footer.
+// See DESIGN.md §3 (The Stamp Rule). Velvelyne is monospaced, so it carries
+// the stamp voice too; the system monospace fallbacks keep metrics close if
+// the web font ever fails to load.
 export const MONO_STACK =
-  'ui-monospace, SFMono-Regular, Menlo, "Cascadia Mono", monospace';
+  '"Velvelyne", ui-monospace, SFMono-Regular, Menlo, "Cascadia Mono", monospace';
 
 export const CARD = {
   width: 320,

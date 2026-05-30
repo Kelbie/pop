@@ -26,8 +26,8 @@ function Home({ onLoginClick }: { onLoginClick: () => void }) {
           alt="Pop logo"
           className="h-24 w-24 rounded-3xl"
         />
-        <h1 className="text-4xl font-bold tracking-tight">Pop</h1>
-        <p className="text-neutral-500 max-w-md">
+        <h1 className="text-6xl font-light tracking-tight">Pop</h1>
+        <p className="text-muted max-w-md">
           Decentralized guestbooks for events, on Nostr. Leave notes, drop
           photos, zap the host.
         </p>
@@ -104,10 +104,10 @@ function ConnectionStatus({
 }) {
   const relayCount = ndk.pool?.relays.size ?? 0;
   return (
-    <div className="flex items-center justify-center gap-2 text-sm">
+    <div className="flex items-center justify-center gap-2">
       <span
         className={
-          "inline-block h-2.5 w-2.5 rounded-full " +
+          "inline-block h-2 w-2 rounded-full " +
           (status === "connected"
             ? "bg-green-500"
             : status === "error"
@@ -115,7 +115,7 @@ function ConnectionStatus({
               : "bg-yellow-500 animate-pulse")
         }
       />
-      <span className="text-neutral-500">
+      <span className="stamp text-muted">
         {status === "connected"
           ? `Connected to ${relayCount} relay${relayCount === 1 ? "" : "s"}`
           : status === "error"
