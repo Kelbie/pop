@@ -8,6 +8,13 @@ import { PixiStage } from "../components/PixiStage";
 
 export type CanvasStatus = "loading" | "empty" | "ready";
 
+// Padding for the canvas's own bottom-right chrome (the ZoomControls), plus a
+// small left gutter. The top inset is supplied by the caller, which measures the
+// floating EventTopBar (placard + search) that overlays the wall.
+const RIGHT_INSET = 72;
+const BOTTOM_INSET = 72;
+const LEFT_INSET = 16;
+
 /**
  * Presentational guestbook wall. Renders the supplied posts on the Pixi canvas
  * (pan / zoom / detail). Search is controlled by the caller (the event top bar
@@ -19,11 +26,14 @@ export function GuestbookCanvas({
   status,
   query = "",
   flashSignal = 0,
+  topInset = 0,
 }: {
   posts: Post[];
   status: CanvasStatus;
   query?: string;
   flashSignal?: number;
+  /** Height (px) of the floating top chrome overlaying the wall. */
+  topInset?: number;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<CanvasController | null>(null);
@@ -69,6 +79,18 @@ export function GuestbookCanvas({
       controllerRef.current.setPosts(posts);
     }
   }, [ready, posts]);
+
+  // ---- reserve space for the floating chrome so panning locks to white space ----
+  useEffect(() => {
+    if (ready) {
+      controllerRef.current?.setInsets({
+        top: topInset,
+        right: RIGHT_INSET,
+        bottom: BOTTOM_INSET,
+        left: LEFT_INSET,
+      });
+    }
+  }, [ready, topInset]);
 
   // ---- search: dim non-matching cards in both layers ----
   const matches = useMemo<Set<string> | null>(() => {

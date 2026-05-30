@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { DonationPanel } from "../components/DonationPanel";
 import { EventTopBar } from "../components/EventTopBar";
@@ -98,6 +98,20 @@ function EventGuestbook({
   // Bumped each time a note is signed; remounts the flash so it fires again.
   const [flash, setFlash] = useState(0);
 
+  // Measure the floating top chrome so the canvas can keep panned content out
+  // from under it (worst on mobile, where the placard + search are much taller).
+  const headerRef = useRef<HTMLElement>(null);
+  const [headerH, setHeaderH] = useState(0);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) =>
+      setHeaderH(entry.contentRect.height),
+    );
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const status: CanvasStatus =
     posts === null ? "loading" : posts.length ? "ready" : "empty";
 
@@ -109,12 +123,14 @@ function EventGuestbook({
         status={status}
         query={query}
         flashSignal={flash}
+        topInset={headerH + 8}
       />
 
       <CameraFlash trigger={flash} />
 
       {/* Floating chrome */}
       <EventTopBar
+        headerRef={headerRef}
         title={pop.name}
         picture={pop.picture}
         banner={pop.banner}
