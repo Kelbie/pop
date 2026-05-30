@@ -5,11 +5,7 @@ import { DonorRow } from "./DonorRow";
 import { useDonations } from "../hooks/useDonations";
 import { useProfile } from "../hooks/useProfile";
 import { ndk } from "../lib/ndk";
-import {
-  buildSignedZapRequest,
-  fetchZapInvoice,
-  lightningAddress,
-} from "../lib/npubcash";
+import { buildSignedZapRequest, fetchZapInvoice } from "../lib/npubcash";
 
 const fmt = new Intl.NumberFormat("en-US");
 const PRESETS = [21, 100, 1000, 5000];
@@ -34,11 +30,10 @@ export function DonationPanel({
 }) {
   const { totalSats, count, donations, loading } = useDonations(hex);
   const { displayName, avatar } = useProfile(hex);
-  const address = lightningAddress(npub);
 
   return (
     <div>
-      {/* Recipient + address QR */}
+      {/* Recipient */}
       <div className="flex flex-col items-center text-center">
         {avatar ? (
           <img
@@ -58,11 +53,6 @@ export function DonationPanel({
         {description && (
           <p className="mt-2 max-w-md text-sm text-muted">{description}</p>
         )}
-
-        <div className="mt-6 rounded-2xl border border-hairline bg-white p-4">
-          <QRCodeSVG value={`lightning:${address}`} size={208} />
-        </div>
-        <CopyAddress address={address} />
       </div>
 
       {/* Running total */}
@@ -101,27 +91,6 @@ export function DonationPanel({
         counted — use the button above (or zap from your Nostr client).
       </p>
     </div>
-  );
-}
-
-function CopyAddress({ address }: { address: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      type="button"
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(address);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        } catch {
-          /* clipboard unavailable */
-        }
-      }}
-      className="mt-3 rounded-lg border border-hairline bg-polaroid px-3 py-1.5 font-mono text-sm text-muted transition hover:text-ink"
-    >
-      {copied ? "Copied!" : address}
-    </button>
   );
 }
 
@@ -189,7 +158,13 @@ function ZapBox({ hex, npub }: { hex: string; npub: string }) {
   if (status === "paid") {
     return (
       <div className="mt-6 rounded-2xl border border-flash/50 bg-flash/10 px-6 py-8 text-center">
-        <div className="text-3xl">⚡️</div>
+        <div className="relative mx-auto flex h-14 w-14 items-center justify-center">
+          <span
+            aria-hidden
+            className="pop-zap-ring absolute inset-0 rounded-full border-2 border-flash"
+          />
+          <span className="pop-zap-pop text-4xl">⚡️</span>
+        </div>
         <h2 className="mt-2 text-xl font-bold text-ink">Thank you!</h2>
         <p className="mt-1 text-sm text-muted">
           Your {fmt.format(amount)} sat zap was received.
@@ -211,7 +186,7 @@ function ZapBox({ hex, npub }: { hex: string; npub: string }) {
         <p className="text-sm text-muted">
           Scan to pay {fmt.format(amount)} sats
         </p>
-        <div className="mt-4 rounded-2xl border border-flash/50 bg-white p-4">
+        <div className="mt-4 rounded-2xl border border-flash/50 bg-polaroid p-4">
           <QRCodeSVG value={`lightning:${invoice}`} size={208} />
         </div>
         <button
@@ -268,7 +243,7 @@ function ZapBox({ hex, npub }: { hex: string; npub: string }) {
         type="button"
         onClick={startZap}
         disabled={status === "loading" || amount <= 0}
-        className="mt-4 w-full rounded-xl bg-flash px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-flash-deep disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-4 w-full rounded-xl bg-flash px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-flash-deep active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:active:translate-y-0"
       >
         {status === "loading" ? "Creating invoice…" : `⚡️ Zap ${fmt.format(amount)} sats`}
       </button>

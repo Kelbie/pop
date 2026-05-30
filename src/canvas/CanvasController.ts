@@ -31,7 +31,6 @@ const FRICTION = 0.9; // per-frame velocity decay
 const BOUNDS_EASE = 0.18;
 const TARGET_EASE = 0.18;
 const RUBBER = 0.4;
-const BG_COLOR = 0xf4efeb; // Paper — matches CARD_COLORS.wall
 const DIM_ALPHA = 0.18;
 
 // Card reveal (Emil: subtle, <300ms, fires once per card, ease-out).
@@ -92,7 +91,9 @@ export class CanvasController {
       antialias: true,
       autoDensity: true,
       resolution: Math.min(window.devicePixelRatio || 1, 2),
-      backgroundColor: BG_COLOR,
+      // Transparent so the ambient atmosphere layer shows through the gaps
+      // between prints (AmbientBackground sits behind the stage).
+      backgroundAlpha: 0,
       preference: "webgl",
     });
     if (this.destroyed) {

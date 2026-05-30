@@ -50,6 +50,10 @@
   --color-hairline: #e3ddd8;
   --color-avatar: #dcd6d3;
   --color-avatar-ink: #5b544f;
+  /* Terracotta — the single accent (DESIGN.md §2). Carries primary actions
+     (Create, Log in, Sign), links, focus rings. Spent like a date-stamp. */
+  --color-terracotta: oklch(57% 0.14 38);
+  --color-terracotta-deep: oklch(50% 0.145 38);
   /* Flash Gold — oklch(82% 0.12 80). A *moment*, not a surface: zap-send only. */
   --color-flash: #e3ad4b;
   --color-flash-deep: #c9923a;
@@ -137,6 +141,73 @@ body,
   outline-offset: 2px;
 }
 
+/* The disposable-camera flash: when a guest signs, the screen briefly bursts
+   warm, like the bulb just fired, then settles. The signature delight moment
+   (DESIGN.md §1). Bright warm-white center bleeding to flash gold. */
+@keyframes popCameraFlash {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.pop-camera-flash {
+  opacity: 0;
+  animation: popCameraFlash 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Zap received: the gift lands with a pop, a flash-gold ring rippling out. */
+@keyframes popZapPop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.pop-zap-pop {
+  animation: popZapPop 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes popZapRing {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+.pop-zap-ring {
+  opacity: 0;
+  animation: popZapRing 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* The event placard settles onto the top of the wall like a label being pinned. */
+@keyframes popPlacardIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.pop-placard-in {
+  animation: popPlacardIn 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* Right slide-over: the Sign composer slides in over the visible wall. */
 @keyframes popSheetIn {
   from {
@@ -154,7 +225,11 @@ body,
   .pop-card-fade,
   .pop-modal-fade,
   .pop-modal-pop,
-  .pop-sheet-in {
+  .pop-placard-in,
+  .pop-sheet-in,
+  .pop-camera-flash,
+  .pop-zap-pop,
+  .pop-zap-ring {
     animation: none;
   }
   .pop-print {

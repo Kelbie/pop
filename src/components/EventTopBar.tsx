@@ -1,18 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { SearchPill } from "./SearchPill";
+import { useDonations } from "../hooks/useDonations";
 import { useProfile } from "../hooks/useProfile";
 import { useAuthStore } from "../store/auth";
 import { shortNpub } from "../lib/pubkey";
 
+const fmtSats = new Intl.NumberFormat("en-US");
+
 /**
- * Slim floating bar over the full-screen guestbook canvas. Carries the event
- * identity (host avatar + title), the search input, and the primary actions
- * (Zap / Sign) plus the auth control. Translucent + blurred like the search
- * pill so the wall reads full-bleed behind it.
+ * Floating chrome over the full-screen guestbook canvas. Two layers:
+ *  - Quiet utility at the corners (home, search, auth) so the wall reads
+ *    full-bleed behind them.
+ *  - A prominent, centered event *placard* — avatar, name, host, and the
+ *    primary actions (Zap / Sign / Share) — pinned to the top of the wall like
+ *    a gallery label, so a guest instantly knows whose moment this is and how
+ *    to add to it.
  */
 export function EventTopBar({
   title,
+  picture,
+  banner,
   hostHex,
   query,
   onQueryChange,
@@ -21,6 +29,10 @@ export function EventTopBar({
   onLoginClick,
 }: {
   title?: string;
+  /** Pop's own 1:1 cover picture — used as the event avatar when present. */
+  picture?: string;
+  /** Pop's own 4:3 banner — rendered behind the bar when present. */
+  banner?: string;
   hostHex: string;
   query: string;
   onQueryChange: (v: string) => void;
@@ -29,72 +41,192 @@ export function EventTopBar({
   onLoginClick: () => void;
 }) {
   const { displayName, avatar } = useProfile(hostHex);
+  const eventName = title || displayName;
+  // The Pop's own cover picture wins over the host's profile avatar.
+  const eventAvatar = picture || avatar;
 
   return (
-    <div className="absolute inset-x-0 top-0 z-30 border-b border-hairline bg-polaroid/80 backdrop-blur">
-      <div className="flex items-center gap-3 px-4 py-2.5">
-        {/* Left: home + host identity */}
-        <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <Link to="/" className="hidden shrink-0 sm:block" aria-label="Pop home">
-            <img src="/logo-dark.jpeg" alt="Pop" className="h-7 w-7 rounded-lg" />
-          </Link>
-          {avatar ? (
-            <img
-              src={avatar}
-              alt=""
-              className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-hairline"
-            />
-          ) : (
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-avatar text-xs font-bold text-avatar-ink">
-              {(title || displayName).slice(0, 1).toUpperCase()}
-            </span>
-          )}
-          <div className="min-w-0 leading-tight">
-            <div className="truncate text-sm font-semibold text-ink">
-              {title || displayName}
-            </div>
-            {title && (
-              <div className="truncate font-mono text-xs text-muted">
-                Hosted by {displayName}
-              </div>
-            )}
-          </div>
-        </div>
+    // pointer-events-none lets the wall stay grabbable in the gaps; each
+    // interactive island opts back in.
+    <header className="pointer-events-none absolute inset-x-0 top-0 z-30">
+      {/* Utility row — home (left), search + auth (right) */}
+      <div className="flex items-start justify-between gap-3 px-3 pt-3 sm:px-4 sm:pt-4">
+        <Link
+          to="/"
+          className="pointer-events-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-polaroid/90 shadow-sm ring-1 ring-hairline backdrop-blur transition hover:bg-polaroid"
+          aria-label="Pop home"
+        >
+          <img src="/pop.png" alt="" className="h-6 w-6 rounded-md" />
+        </Link>
 
-        {/* Center: search */}
-        <div className="hidden md:block">
-          <SearchPill value={query} onChange={onQueryChange} className="w-72" />
-        </div>
-
-        {/* Right: actions */}
-        <div className="flex flex-1 items-center justify-end gap-2">
-          {onZap && (
-            <button
-              type="button"
-              onClick={onZap}
-              className="flex items-center gap-1.5 rounded-full border border-hairline bg-polaroid px-3.5 py-2 text-sm font-semibold text-ink transition hover:bg-paper"
-            >
-              <span aria-hidden>⚡</span>
-              <span className="hidden sm:inline">Zap</span>
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={onSign}
-            className="rounded-full bg-ink px-3.5 py-2 text-sm font-semibold text-polaroid transition hover:bg-avatar-ink"
-          >
-            <span className="sm:hidden">Sign</span>
-            <span className="hidden sm:inline">Sign the guestbook</span>
-          </button>
+        <div className="pointer-events-auto flex items-center gap-2">
+          <SearchPill
+            value={query}
+            onChange={onQueryChange}
+            className="hidden w-64 md:flex lg:w-72"
+          />
           <AuthControl onLoginClick={onLoginClick} />
         </div>
       </div>
 
-      {/* Search on small screens, below the row */}
-      <div className="px-4 pb-2.5 md:hidden">
+      {/* Event placard — the centerpiece */}
+      <div className="mt-1 flex justify-center px-3 sm:mt-2">
+        <div className="pop-placard-in pointer-events-auto relative w-full max-w-md overflow-hidden rounded-2xl border border-hairline bg-polaroid/85 px-5 py-4 text-center shadow-[0_8px_28px_rgba(36,30,26,0.12)] backdrop-blur-md sm:px-7 sm:py-5">
+          {/* The host's banner, if any, washes warmly behind the placard. */}
+          {banner && (
+            <>
+              <img
+                src={banner}
+                alt=""
+                aria-hidden
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-polaroid/80 backdrop-blur-md" />
+            </>
+          )}
+
+          <div className="relative">
+            {eventAvatar ? (
+              <img
+                src={eventAvatar}
+                alt=""
+                className="mx-auto h-12 w-12 rounded-full object-cover ring-2 ring-hairline sm:h-14 sm:w-14"
+              />
+            ) : (
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-avatar text-lg font-bold text-avatar-ink sm:h-14 sm:w-14">
+                {eventName.slice(0, 1).toUpperCase()}
+              </span>
+            )}
+
+            <h1 className="mt-2.5 line-clamp-2 text-balance text-xl font-bold leading-tight tracking-tight text-ink sm:text-2xl">
+              {eventName}
+            </h1>
+            {title && (
+              <p className="mt-0.5 truncate font-mono text-xs text-muted">
+                Hosted by {displayName}
+              </p>
+            )}
+
+            {hostHex && <ZapTotals hex={hostHex} />}
+
+            <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={onSign}
+                className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-polaroid transition hover:bg-avatar-ink active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              >
+                Sign the guestbook
+              </button>
+              {onZap && (
+                <button
+                  type="button"
+                  onClick={onZap}
+                  className="flex items-center gap-1.5 rounded-full border border-hairline bg-polaroid px-4 py-2 text-sm font-semibold text-ink transition hover:bg-paper active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                >
+                  <span aria-hidden>⚡</span>
+                  Zap
+                </button>
+              )}
+              <ShareButton title={eventName} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Search on small screens, below the placard */}
+      <div className="pointer-events-auto mt-2 px-3 md:hidden">
+
         <SearchPill value={query} onChange={onQueryChange} className="w-full" />
       </div>
-    </div>
+    </header>
+  );
+}
+
+/**
+ * Live zap tally for the event, in the monospace stamp voice. Hidden until the
+ * first zap lands so a fresh guestbook stays uncluttered.
+ */
+function ZapTotals({ hex }: { hex: string }) {
+  const { totalSats, count } = useDonations(hex);
+  if (count === 0) return null;
+  return (
+    <p className="mt-2 font-mono text-xs text-muted">
+      <span aria-hidden>⚡</span>{" "}
+      <span className="font-semibold text-ink">
+        {fmtSats.format(Math.round(totalSats))}
+      </span>{" "}
+      sats raised · {count} zap{count === 1 ? "" : "s"}
+    </p>
+  );
+}
+
+/**
+ * Share the guestbook link. Uses the native share sheet on devices that have
+ * one (the common case: a guest's phone at the venue), and falls back to
+ * copy-to-clipboard with inline confirmation everywhere else.
+ */
+function ShareButton({ title }: { title: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const share = async () => {
+    const url = window.location.href;
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title, url });
+        return;
+      } catch {
+        // user dismissed the sheet, or it failed — fall through to copy.
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={share}
+      className="flex items-center gap-1.5 rounded-full border border-hairline bg-polaroid px-4 py-2 text-sm font-semibold text-ink transition hover:bg-paper active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+    >
+      {copied ? (
+        <>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d="m5 13 4 4L19 7"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Copied
+        </>
+      ) : (
+        <>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d="M12 15V4m0 0L8 8m4-4 4 4"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+          Share
+        </>
+      )}
+    </button>
   );
 }
 
@@ -126,7 +258,7 @@ function AuthControl({ onLoginClick }: { onLoginClick: () => void }) {
         type="button"
         onClick={onLoginClick}
         disabled={status === "connecting"}
-        className="hidden rounded-full border border-hairline bg-polaroid px-3.5 py-2 text-sm font-semibold text-ink transition hover:bg-paper disabled:opacity-50 sm:block"
+        className="rounded-full border border-hairline bg-polaroid/90 px-4 py-2 text-sm font-semibold text-ink shadow-sm backdrop-blur transition hover:bg-polaroid disabled:opacity-50"
       >
         {status === "connecting" ? "…" : "Log in"}
       </button>
@@ -142,22 +274,28 @@ function AuthControl({ onLoginClick }: { onLoginClick: () => void }) {
       <button
         type="button"
         onClick={() => setMenuOpen((v) => !v)}
-        className="flex items-center rounded-full ring-1 ring-hairline transition hover:ring-muted"
+        className="flex items-center rounded-full bg-polaroid/90 shadow-sm ring-1 ring-hairline backdrop-blur transition hover:ring-muted"
         aria-label={displayName}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
       >
         {avatar ? (
-          <img src={avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+          <img src={avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
         ) : (
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-avatar text-xs font-semibold text-avatar-ink">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-avatar text-xs font-semibold text-avatar-ink">
             {displayName.slice(0, 1).toUpperCase()}
           </span>
         )}
       </button>
 
       {menuOpen && (
-        <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-xl border border-hairline bg-polaroid py-1 shadow-2xl">
+        <div
+          role="menu"
+          className="absolute right-0 mt-2 w-44 overflow-hidden rounded-xl border border-hairline bg-polaroid py-1 shadow-2xl"
+        >
           <button
             type="button"
+            role="menuitem"
             onClick={() => {
               logout();
               setMenuOpen(false);
