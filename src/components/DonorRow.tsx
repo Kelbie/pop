@@ -31,18 +31,18 @@ export function DonorRow({ donation }: { donation: Donation }) {
   const avatar = profile?.picture || profile?.image;
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3">
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-hairline bg-polaroid px-4 py-3">
       <div className="flex min-w-0 items-center gap-3">
         {avatar ? (
           <img src={avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
         ) : (
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-xs font-semibold text-neutral-600">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-avatar text-xs font-semibold text-avatar-ink">
             {name.slice(0, 1).toUpperCase()}
           </span>
         )}
-        <span className="truncate text-sm text-neutral-700">{name}</span>
+        <span className="truncate text-sm text-ink">{name}</span>
       </div>
-      <span className="shrink-0 font-mono text-sm font-semibold text-amber-500">
+      <span className="shrink-0 font-mono text-sm font-semibold text-flash-deep">
         {fmt.format(Math.round(donation.sats))} sats
       </span>
     </div>
