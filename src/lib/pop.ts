@@ -15,6 +15,10 @@ export interface Pop {
   description: string;
   /** Host pubkey (hex) — the author of the Pop. */
   host: string;
+  /** Square (1:1) cover picture url — the event's avatar (the `picture` tag). */
+  picture?: string;
+  /** Wide (4:3) banner photo url — the event's header (the `banner` tag). */
+  banner?: string;
   /** Unix seconds the event was created. */
   createdAt: number;
   /** Shareable `nevent` bech32 reference (NIP-19), with relay + author hints. */
@@ -37,6 +41,8 @@ function toPop(event: NDKEvent): Pop {
     name: event.tagValue("title") ?? "Untitled",
     description: event.content,
     host: event.pubkey,
+    picture: event.tagValue("picture") || undefined,
+    banner: event.tagValue("banner") || undefined,
     createdAt: event.created_at ?? 0,
     nevent: encodeNevent(event),
   };
@@ -46,6 +52,8 @@ function toPop(event: NDKEvent): Pop {
 export async function createPop(input: {
   name: string;
   description: string;
+  picture?: string;
+  banner?: string;
 }): Promise<Pop> {
   const event = new NDKEvent(ndk);
   event.kind = POP_KIND;
@@ -54,6 +62,9 @@ export async function createPop(input: {
     ["alt", `Pop guestbook: ${input.name}`],
     ["t", "pop"],
   ];
+  // Mirror kind-0 metadata convention: square avatar = `picture`, wide cover = `banner`.
+  if (input.picture) event.tags.push(["picture", input.picture]);
+  if (input.banner) event.tags.push(["banner", input.banner]);
   event.content = input.description;
 
   const relays = await event.publish();

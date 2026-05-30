@@ -13,6 +13,8 @@ import { shortNpub } from "../lib/pubkey";
  */
 export function EventTopBar({
   title,
+  picture,
+  banner,
   hostHex,
   query,
   onQueryChange,
@@ -21,6 +23,10 @@ export function EventTopBar({
   onLoginClick,
 }: {
   title?: string;
+  /** Pop's own 1:1 cover picture — used as the event avatar when present. */
+  picture?: string;
+  /** Pop's own 4:3 banner — rendered behind the bar when present. */
+  banner?: string;
   hostHex: string;
   query: string;
   onQueryChange: (v: string) => void;
@@ -29,18 +35,30 @@ export function EventTopBar({
   onLoginClick: () => void;
 }) {
   const { displayName, avatar } = useProfile(hostHex);
+  // The Pop's own cover picture wins over the host's profile avatar.
+  const eventAvatar = picture || avatar;
 
   return (
-    <div className="absolute inset-x-0 top-0 z-30 border-b border-hairline bg-polaroid/80 backdrop-blur">
-      <div className="flex items-center gap-3 px-4 py-2.5">
+    <div className="absolute inset-x-0 top-0 z-30 overflow-hidden border-b border-hairline">
+      {banner && (
+        <img
+          src={banner}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
+      {/* Translucent wash over the banner keeps the controls legible. */}
+      <div className="absolute inset-0 bg-polaroid/80 backdrop-blur" />
+      <div className="relative flex items-center gap-3 px-4 py-2.5">
         {/* Left: home + host identity */}
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <Link to="/" className="hidden shrink-0 sm:block" aria-label="Pop home">
             <img src="/logo-dark.jpeg" alt="Pop" className="h-7 w-7 rounded-lg" />
           </Link>
-          {avatar ? (
+          {eventAvatar ? (
             <img
-              src={avatar}
+              src={eventAvatar}
               alt=""
               className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-hairline"
             />
@@ -91,7 +109,7 @@ export function EventTopBar({
       </div>
 
       {/* Search on small screens, below the row */}
-      <div className="px-4 pb-2.5 md:hidden">
+      <div className="relative px-4 pb-2.5 md:hidden">
         <SearchPill value={query} onChange={onQueryChange} className="w-full" />
       </div>
     </div>
