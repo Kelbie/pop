@@ -38,3 +38,32 @@ export function parseNeventParam(param: string): ParsedNevent | null {
   }
   return null;
 }
+
+/**
+ * Build an `nevent1…` for an event, carrying author + kind + relay hints so it
+ * resolves reliably in other clients (matching how we encode Pop events).
+ */
+export function encodeEventNevent(opts: {
+  id: string;
+  author?: string;
+  kind?: number;
+  relays?: string[];
+}): string {
+  return nip19.neventEncode({
+    id: opts.id,
+    author: opts.author,
+    kind: opts.kind,
+    // A couple of hints is plenty; more just bloats the string.
+    relays: opts.relays?.filter(Boolean).slice(0, 2),
+  });
+}
+
+/** A web URL to view an event on nostr.com (an njump-style universal viewer). */
+export function nostrComEventUrl(opts: {
+  id: string;
+  author?: string;
+  kind?: number;
+  relays?: string[];
+}): string {
+  return `https://nostr.com/${encodeEventNevent(opts)}`;
+}
