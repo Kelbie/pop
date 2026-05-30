@@ -56,7 +56,11 @@ export async function createPop(input: {
 
 /** Fetch every Pop authored by the given host, newest first. */
 export async function fetchPops(host: string): Promise<Pop[]> {
-  const events = await ndk.fetchEvents({ kinds: [POP_KIND], authors: [host] });
+  const events = await ndk.fetchEvents({
+    kinds: [POP_KIND],
+    authors: [host],
+    "#d": ["pop"],
+  });
 
   // Addressable events: keep only the newest copy per `d` tag.
   const newest = new Map<string, NDKEvent>();
@@ -75,7 +79,7 @@ export async function fetchPops(host: string): Promise<Pop[]> {
 
 /** Fetch every Pop across relays for the public, searchable homepage list. */
 export async function fetchAllPops(limit = 200): Promise<Pop[]> {
-  const events = await ndk.fetchEvents({ kinds: [POP_KIND], limit });
+  const events = await ndk.fetchEvents({ kinds: [POP_KIND], "#d": ["pop"], limit });
 
   // Addressable events: keep only the newest copy per host + `d` tag.
   const newest = new Map<string, NDKEvent>();
