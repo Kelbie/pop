@@ -66,7 +66,7 @@ export function EventGuestbookPage({
     return (
       <div className="mx-auto max-w-md px-6 py-24 text-center">
         <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-hairline border-t-muted" />
-        <p className="mt-4 text-sm text-muted">Loading guestbook…</p>
+        <p className="mt-4 text-sm text-muted">Developing the prints…</p>
       </div>
     );
   }
@@ -95,6 +95,8 @@ function EventGuestbook({
   const [query, setQuery] = useState("");
   const [zapOpen, setZapOpen] = useState(false);
   const [signOpen, setSignOpen] = useState(false);
+  // Bumped each time a note is signed; remounts the flash so it fires again.
+  const [flash, setFlash] = useState(0);
 
   const status: CanvasStatus =
     posts === null ? "loading" : posts.length ? "ready" : "empty";
@@ -102,7 +104,14 @@ function EventGuestbook({
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden">
       {/* The wall, full-screen by default */}
-      <GuestbookCanvas posts={posts ?? []} status={status} query={query} />
+      <GuestbookCanvas
+        posts={posts ?? []}
+        status={status}
+        query={query}
+        flashSignal={flash}
+      />
+
+      <CameraFlash trigger={flash} />
 
       {/* Floating chrome */}
       <EventTopBar
@@ -140,6 +149,7 @@ function EventGuestbook({
           onSigned={(post) => {
             setPosts((prev) => [post, ...(prev ?? [])]);
             setSignOpen(false);
+            setFlash((n) => n + 1);
           }}
         />
       </SlideOver>
@@ -147,10 +157,31 @@ function EventGuestbook({
   );
 }
 
+/**
+ * A brief warm flash over the whole wall when a note is signed: the disposable
+ * camera firing (DESIGN.md §1). `trigger` bumps on each signing; keying on it
+ * remounts the element so the animation replays. Decorative, so hidden from
+ * assistive tech and silenced under prefers-reduced-motion (handled in CSS).
+ */
+function CameraFlash({ trigger }: { trigger: number }) {
+  if (trigger === 0) return null;
+  return (
+    <div
+      key={trigger}
+      aria-hidden
+      className="pop-camera-flash pointer-events-none fixed inset-0 z-50"
+      style={{
+        background:
+          "radial-gradient(circle at center, #fffdf4 0%, var(--color-flash) 70%, transparent 100%)",
+      }}
+    />
+  );
+}
+
 const inputCls =
   "w-full rounded-lg border border-hairline bg-polaroid px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-ink";
 const signBtnCls =
-  "w-full rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-polaroid transition hover:bg-avatar-ink disabled:cursor-not-allowed disabled:opacity-40";
+  "w-full rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-polaroid transition hover:bg-avatar-ink active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40 disabled:active:translate-y-0";
 
 /**
  * Sign-the-guestbook composer. Two paths:

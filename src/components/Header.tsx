@@ -33,7 +33,7 @@ export function Header({ onLoginClick }: HeaderProps) {
   const avatar = profile?.picture || profile?.image;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/80 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-hairline bg-polaroid/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
         <Link to="/" className="flex items-center gap-2">
           <img
@@ -41,7 +41,7 @@ export function Header({ onLoginClick }: HeaderProps) {
             alt="Pop logo"
             className="h-8 w-8 rounded-lg"
           />
-          <span className="text-lg font-bold tracking-tight text-neutral-900">
+          <span className="text-lg font-bold tracking-tight text-ink">
             Pop
           </span>
         </Link>
@@ -51,7 +51,7 @@ export function Header({ onLoginClick }: HeaderProps) {
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
-              className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white py-1 pl-1 pr-3 transition hover:border-neutral-300"
+              className="flex items-center gap-2 rounded-full border border-hairline bg-polaroid py-1 pl-1 pr-3 transition hover:border-muted"
             >
               {avatar ? (
                 <img
@@ -60,24 +60,24 @@ export function Header({ onLoginClick }: HeaderProps) {
                   className="h-7 w-7 rounded-full object-cover"
                 />
               ) : (
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-avatar text-xs font-semibold text-avatar-ink">
                   {displayName.slice(0, 1).toUpperCase()}
                 </span>
               )}
-              <span className="max-w-[10rem] truncate text-sm text-neutral-700">
+              <span className="max-w-[10rem] truncate text-sm text-ink">
                 {displayName}
               </span>
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-xl border border-neutral-200 bg-white py-1 shadow-2xl">
+              <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-xl border border-hairline bg-polaroid py-1 shadow-2xl">
                 <button
                   type="button"
                   onClick={() => {
                     logout();
                     setMenuOpen(false);
                   }}
-                  className="block w-full px-4 py-2 text-left text-sm text-neutral-700 transition hover:bg-neutral-100"
+                  className="block w-full px-4 py-2 text-left text-sm text-ink transition hover:bg-paper"
                 >
                   Log out
                 </button>
@@ -89,7 +89,7 @@ export function Header({ onLoginClick }: HeaderProps) {
             type="button"
             onClick={onLoginClick}
             disabled={status === "connecting"}
-            className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
+            className="rounded-xl bg-ink px-4 py-2 text-sm font-semibold text-polaroid transition hover:bg-avatar-ink active:translate-y-px disabled:opacity-50 disabled:active:translate-y-0"
           >
             {status === "connecting" ? "Connecting…" : "Log in"}
           </button>

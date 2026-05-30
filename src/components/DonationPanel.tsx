@@ -158,7 +158,13 @@ function ZapBox({ hex, npub }: { hex: string; npub: string }) {
   if (status === "paid") {
     return (
       <div className="mt-6 rounded-2xl border border-flash/50 bg-flash/10 px-6 py-8 text-center">
-        <div className="text-3xl">⚡️</div>
+        <div className="relative mx-auto flex h-14 w-14 items-center justify-center">
+          <span
+            aria-hidden
+            className="pop-zap-ring absolute inset-0 rounded-full border-2 border-flash"
+          />
+          <span className="pop-zap-pop text-4xl">⚡️</span>
+        </div>
         <h2 className="mt-2 text-xl font-bold text-ink">Thank you!</h2>
         <p className="mt-1 text-sm text-muted">
           Your {fmt.format(amount)} sat zap was received.
@@ -180,7 +186,7 @@ function ZapBox({ hex, npub }: { hex: string; npub: string }) {
         <p className="text-sm text-muted">
           Scan to pay {fmt.format(amount)} sats
         </p>
-        <div className="mt-4 rounded-2xl border border-flash/50 bg-white p-4">
+        <div className="mt-4 rounded-2xl border border-flash/50 bg-polaroid p-4">
           <QRCodeSVG value={`lightning:${invoice}`} size={208} />
         </div>
         <button
@@ -237,7 +243,7 @@ function ZapBox({ hex, npub }: { hex: string; npub: string }) {
         type="button"
         onClick={startZap}
         disabled={status === "loading" || amount <= 0}
-        className="mt-4 w-full rounded-xl bg-flash px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-flash-deep disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-4 w-full rounded-xl bg-flash px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-flash-deep active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:active:translate-y-0"
       >
         {status === "loading" ? "Creating invoice…" : `⚡️ Zap ${fmt.format(amount)} sats`}
       </button>

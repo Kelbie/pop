@@ -87,6 +87,58 @@ body,
   outline-offset: 2px;
 }
 
+/* The disposable-camera flash: when a guest signs, the screen briefly bursts
+   warm, like the bulb just fired, then settles. The signature delight moment
+   (DESIGN.md §1). Bright warm-white center bleeding to flash gold. */
+@keyframes popCameraFlash {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.pop-camera-flash {
+  opacity: 0;
+  animation: popCameraFlash 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Zap received: the gift lands with a pop, a flash-gold ring rippling out. */
+@keyframes popZapPop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.pop-zap-pop {
+  animation: popZapPop 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes popZapRing {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+.pop-zap-ring {
+  opacity: 0;
+  animation: popZapRing 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
 /* The event placard settles onto the top of the wall like a label being pinned. */
 @keyframes popPlacardIn {
   from {
@@ -120,7 +172,10 @@ body,
   .pop-modal-fade,
   .pop-modal-pop,
   .pop-placard-in,
-  .pop-sheet-in {
+  .pop-sheet-in,
+  .pop-camera-flash,
+  .pop-zap-pop,
+  .pop-zap-ring {
     animation: none;
   }
   .pop-print {

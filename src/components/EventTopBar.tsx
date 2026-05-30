@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { SearchPill } from "./SearchPill";
+import { useDonations } from "../hooks/useDonations";
 import { useProfile } from "../hooks/useProfile";
 import { useAuthStore } from "../store/auth";
 import { shortNpub } from "../lib/pubkey";
+
+const fmtSats = new Intl.NumberFormat("en-US");
 
 /**
  * Floating chrome over the full-screen guestbook canvas. Two layers:
@@ -82,11 +85,13 @@ export function EventTopBar({
             </p>
           )}
 
+          {hostHex && <ZapTotals hex={hostHex} />}
+
           <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
             <button
               type="button"
               onClick={onSign}
-              className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-polaroid transition hover:bg-avatar-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-polaroid transition hover:bg-avatar-ink active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
               Sign the guestbook
             </button>
@@ -94,7 +99,7 @@ export function EventTopBar({
               <button
                 type="button"
                 onClick={onZap}
-                className="flex items-center gap-1.5 rounded-full border border-hairline bg-polaroid px-4 py-2 text-sm font-semibold text-ink transition hover:bg-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                className="flex items-center gap-1.5 rounded-full border border-hairline bg-polaroid px-4 py-2 text-sm font-semibold text-ink transition hover:bg-paper active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
               >
                 <span aria-hidden>⚡</span>
                 Zap
@@ -110,6 +115,24 @@ export function EventTopBar({
         <SearchPill value={query} onChange={onQueryChange} className="w-full" />
       </div>
     </header>
+  );
+}
+
+/**
+ * Live zap tally for the event, in the monospace stamp voice. Hidden until the
+ * first zap lands so a fresh guestbook stays uncluttered.
+ */
+function ZapTotals({ hex }: { hex: string }) {
+  const { totalSats, count } = useDonations(hex);
+  if (count === 0) return null;
+  return (
+    <p className="mt-2 font-mono text-xs text-muted">
+      <span aria-hidden>⚡</span>{" "}
+      <span className="font-semibold text-ink">
+        {fmtSats.format(Math.round(totalSats))}
+      </span>{" "}
+      sats raised · {count} zap{count === 1 ? "" : "s"}
+    </p>
   );
 }
 
@@ -144,7 +167,7 @@ function ShareButton({ title }: { title: string }) {
     <button
       type="button"
       onClick={share}
-      className="flex items-center gap-1.5 rounded-full border border-hairline bg-polaroid px-4 py-2 text-sm font-semibold text-ink transition hover:bg-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+      className="flex items-center gap-1.5 rounded-full border border-hairline bg-polaroid px-4 py-2 text-sm font-semibold text-ink transition hover:bg-paper active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
     >
       {copied ? (
         <>

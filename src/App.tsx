@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
+import { AmbientBackground } from "./components/AmbientBackground";
 import { Header } from "./components/Header";
 import { LoginModal } from "./components/LoginModal";
 import { PopCreator } from "./components/PopCreator";
@@ -19,22 +20,28 @@ function Home({ onLoginClick }: { onLoginClick: () => void }) {
   }, []);
 
   return (
-    <main className="flex flex-col items-center gap-8 px-6 py-16">
-      <div className="flex flex-col items-center text-center space-y-3">
+    <main className="relative flex min-h-[calc(100dvh-57px)] flex-col items-center justify-center gap-10 overflow-hidden px-6 py-16">
+      <AmbientBackground />
+
+      <div className="relative z-10 flex flex-col items-center text-center">
         <img
           src="/logo-dark.jpeg"
           alt="Pop logo"
-          className="h-24 w-24 rounded-3xl"
+          className="h-24 w-24 rounded-3xl shadow-[0_10px_30px_rgba(36,30,26,0.18)]"
         />
-        <h1 className="text-4xl font-bold tracking-tight">Pop</h1>
-        <p className="text-neutral-500 max-w-md">
+        <h1 className="mt-5 text-5xl font-bold tracking-tight text-ink">Pop</h1>
+        <p className="mt-3 max-w-md text-pretty text-muted">
           Decentralized guestbooks for events, on Nostr. Leave notes, drop
           photos, zap the host.
         </p>
-        <ConnectionStatus status={status} />
+        <div className="mt-4">
+          <ConnectionStatus status={status} />
+        </div>
       </div>
 
-      <CreatorSection onLoginClick={onLoginClick} />
+      <div className="relative z-10 w-full max-w-md">
+        <CreatorSection onLoginClick={onLoginClick} />
+      </div>
     </main>
   );
 }
@@ -82,14 +89,14 @@ function CreatorSection({ onLoginClick }: { onLoginClick: () => void }) {
 
   return (
     <div className="flex flex-col items-center gap-3 text-center">
-      <p className="text-sm text-neutral-500">
+      <p className="text-sm text-muted">
         Log in to create a Pop for your event.
       </p>
       <button
         type="button"
         onClick={onLoginClick}
         disabled={status === "connecting"}
-        className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
+        className="rounded-xl bg-ink px-5 py-2.5 text-sm font-semibold text-polaroid shadow-sm transition hover:bg-avatar-ink active:translate-y-px disabled:opacity-50 disabled:active:translate-y-0"
       >
         {status === "connecting" ? "Connecting…" : "Log in"}
       </button>
@@ -115,7 +122,7 @@ function ConnectionStatus({
               : "bg-yellow-500 animate-pulse")
         }
       />
-      <span className="text-neutral-500">
+      <span className="text-muted">
         {status === "connected"
           ? `Connected to ${relayCount} relay${relayCount === 1 ? "" : "s"}`
           : status === "error"

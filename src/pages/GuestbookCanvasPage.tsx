@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CanvasController, type LodMode } from "../canvas/CanvasController";
 import type { Post } from "../types/post";
+import { AmbientBackground } from "../components/AmbientBackground";
 import { DetailModal } from "../components/DetailModal";
 import { DomOverlay } from "../components/DomOverlay";
 import { PixiStage } from "../components/PixiStage";
@@ -17,13 +18,16 @@ export function GuestbookCanvas({
   posts,
   status,
   query = "",
+  flashSignal = 0,
 }: {
   posts: Post[];
   status: CanvasStatus;
   query?: string;
+  flashSignal?: number;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<CanvasController | null>(null);
+  const getCamera = useCallback(() => controllerRef.current?.getCamera(), []);
 
   const [ready, setReady] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -113,6 +117,8 @@ export function GuestbookCanvas({
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-paper">
+      <AmbientBackground getCamera={getCamera} flashSignal={flashSignal} />
+
       <PixiStage
         hostRef={hostRef}
         controllerRef={controllerRef}
@@ -142,14 +148,14 @@ export function GuestbookCanvas({
       {status === "loading" && (
         <Centered>
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-hairline border-t-muted" />
-          <span className="text-sm text-muted">Loading the guestbook…</span>
+          <span className="text-sm text-muted">Developing the prints…</span>
         </Centered>
       )}
       {status === "empty" && (
         <Centered>
-          <span className="text-lg font-medium text-ink">No posts yet</span>
+          <span className="text-lg font-medium text-ink">A blank wall, for now</span>
           <span className="text-sm text-muted">
-            Be the first to sign this guestbook.
+            Be the first to pin a note.
           </span>
         </Centered>
       )}
