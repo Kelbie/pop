@@ -46,46 +46,89 @@ export interface WorldBounds {
 }
 
 /**
+ * Per-edge padding (px) reserved for floating chrome that sits *on top* of the
+ * canvas — the event placard / search at the top, the zoom buttons bottom-right.
+ * Pan/fit math clamps against this visible window so content can always be
+ * dragged into the white space and never disappears under the overlays.
+ */
+export interface EdgeInsets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+export const NO_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
+
+/**
+ * The visible span on one axis: `[loInset, viewSize - hiInset]`. If the insets
+ * exceed the viewport (a very small / short screen), fall back to the full
+ * viewport so the window never inverts.
+ */
+function visibleSpan(viewSize: number, loInset: number, hiInset: number) {
+  const start = loInset;
+  const end = viewSize - hiInset;
+  if (end - start < 1) return { start: 0, end: viewSize };
+  return { start, end };
+}
+
+/**
  * The allowed [min,max] range for cam.x / cam.y so the world stays sensibly in
- * view. When the (scaled) world is smaller than the viewport on an axis we
- * center it; otherwise we let it pan edge-to-edge with `pad` slack.
+ * view. When the (scaled) world is smaller than the *visible window* on an axis
+ * we center it there; otherwise we let it pan edge-to-edge within the window
+ * with `pad` slack. With `NO_INSETS` this is the plain viewport behavior.
  */
 export function panLimits(
   cam: Camera,
   vp: Viewport,
   world: WorldBounds,
-  pad = 120,
+  insets: EdgeInsets = NO_INSETS,
+  pad = 64,
 ) {
-  function axis(worldSize: number, viewSize: number) {
+  function axis(
+    worldSize: number,
+    viewSize: number,
+    loInset: number,
+    hiInset: number,
+  ) {
+    const { start, end } = visibleSpan(viewSize, loInset, hiInset);
+    const win = end - start;
     const scaled = worldSize * cam.scale;
-    if (scaled <= viewSize) {
-      // center: cam = (viewSize - scaled) / 2, with a little slack
-      const c = (viewSize - scaled) / 2;
+    if (scaled <= win) {
+      // center within the visible window, with a little slack
+      const c = start + (win - scaled) / 2;
       return { min: c - pad, max: c + pad };
     }
-    // edge-to-edge: cam ranges from (viewSize - scaled - pad) .. pad
-    return { min: viewSize - scaled - pad, max: pad };
+    // edge-to-edge within the window
+    return { min: end - scaled - pad, max: start + pad };
   }
-  const x = axis(world.width, vp.width);
-  const y = axis(world.height, vp.height);
+  const x = axis(world.width, vp.width, insets.left, insets.right);
+  const y = axis(world.height, vp.height, insets.top, insets.bottom);
   return { minX: x.min, maxX: x.max, minY: y.min, maxY: y.max };
 }
 
-/** Camera that fits the whole world into the viewport with margin. */
+/** Camera that fits the whole world into the visible window with margin. */
 export function fitCamera(
   vp: Viewport,
   world: WorldBounds,
+  insets: EdgeInsets = NO_INSETS,
   margin = 0.9,
 ): Camera {
+  const winW = Math.max(1, vp.width - insets.left - insets.right);
+  const winH = Math.max(1, vp.height - insets.top - insets.bottom);
   if (world.width <= 0 || world.height <= 0) {
-    return { x: vp.width / 2, y: vp.height / 2, scale: 1 };
+    return {
+      x: insets.left + winW / 2,
+      y: insets.top + winH / 2,
+      scale: 1,
+    };
   }
   const scale = clampScale(
-    Math.min(vp.width / world.width, vp.height / world.height) * margin,
+    Math.min(winW / world.width, winH / world.height) * margin,
   );
   return {
     scale,
-    x: (vp.width - world.width * scale) / 2,
-    y: (vp.height - world.height * scale) / 2,
+    x: insets.left + (winW - world.width * scale) / 2,
+    y: insets.top + (winH - world.height * scale) / 2,
   };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type Ref } from "react";
 import { Link } from "react-router-dom";
 import { SearchPill } from "./SearchPill";
 import { useDonations } from "../hooks/useDonations";
@@ -27,6 +27,7 @@ export function EventTopBar({
   onZap,
   onSign,
   onLoginClick,
+  headerRef,
 }: {
   title?: string;
   /** Pop's own 1:1 cover picture — used as the event avatar when present. */
@@ -39,6 +40,8 @@ export function EventTopBar({
   onZap?: () => void;
   onSign: () => void;
   onLoginClick: () => void;
+  /** Attached to the root <header> so the canvas can measure the covered strip. */
+  headerRef?: Ref<HTMLElement>;
 }) {
   const { displayName, avatar } = useProfile(hostHex);
   const eventName = title || displayName;
@@ -48,7 +51,7 @@ export function EventTopBar({
   return (
     // pointer-events-none lets the wall stay grabbable in the gaps; each
     // interactive island opts back in.
-    <header className="pointer-events-none absolute inset-x-0 top-0 z-30">
+    <header ref={headerRef} className="pointer-events-none absolute inset-x-0 top-0 z-30">
       {/* Utility row — home (left), search + auth (right) */}
       <div className="flex items-start justify-between gap-3 px-3 pt-3 sm:px-4 sm:pt-4">
         <Link

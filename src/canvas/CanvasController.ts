@@ -7,10 +7,12 @@ import {
   fitCamera,
   LOD_NEAR_IN,
   LOD_NEAR_OUT,
+  NO_INSETS,
   panLimits,
   screenToWorld,
   zoomAt,
   type Camera,
+  type EdgeInsets,
 } from "./camera";
 
 export type LodMode = "far" | "near";
@@ -32,7 +34,9 @@ interface CardNode {
 }
 
 const FRICTION = 0.9; // per-frame velocity decay
-const BOUNDS_EASE = 0.18;
+const BOUNDS_EASE = 0.18; // spring strength easing back inside the pan bounds
+const OVERSCROLL_FRICTION = 0.5; // extra per-frame velocity bleed past an edge
+const SETTLE_EPS = 0.5; // px: snap to the bound and stop when this close
 const TARGET_EASE = 0.18;
 const POS_EASE = 0.16; // per-frame ease as cards glide to a new ranked slot
 const RUBBER = 0.4;
@@ -80,6 +84,9 @@ export class CanvasController {
   private target: Camera | null = null;
   private dragging = false;
   private vp = { width: 1, height: 1 };
+  // Padding reserved for the floating chrome (top placard/search, zoom buttons)
+  // so panned content always lands in the visible white space.
+  private insets: EdgeInsets = NO_INSETS;
 
   private lodMode: LodMode = "far";
   private lastNearKey = "";
@@ -222,8 +229,17 @@ export class CanvasController {
 
   // ---- input (called by the React gesture layer) --------------------------
 
+  /**
+   * Reserve space for the on-top chrome (header/search, zoom buttons). The
+   * per-frame elastic ease-back in `tick()` pulls the camera into the new
+   * limits, so a growing/shrinking header settles content gracefully.
+   */
+  setInsets(insets: EdgeInsets): void {
+    this.insets = insets;
+  }
+
   applyPan(dx: number, dy: number): void {
-    const lim = panLimits(this.cam, this.vp, this.layout.bounds);
+    const lim = panLimits(this.cam, this.vp, this.layout.bounds, this.insets);
     this.cam.x = softClamp(this.cam.x + dx, lim.minX, lim.maxX);
     this.cam.y = softClamp(this.cam.y + dy, lim.minY, lim.maxY);
     this.target = null;
@@ -261,20 +277,20 @@ export class CanvasController {
     if (!node) return;
     const r = node.rect;
     const margin = 1.4;
-    const scale = Math.min(
-      this.vp.width / (r.w * margin),
-      this.vp.height / (r.h * margin),
-      2,
-    );
+    // Centre within the visible window (viewport minus chrome), not the raw
+    // viewport, so the opened note never sits behind the header/search.
+    const winW = Math.max(1, this.vp.width - this.insets.left - this.insets.right);
+    const winH = Math.max(1, this.vp.height - this.insets.top - this.insets.bottom);
+    const scale = Math.min(winW / (r.w * margin), winH / (r.h * margin), 2);
     this.target = {
       scale,
-      x: this.vp.width / 2 - (r.x + r.w / 2) * scale,
-      y: this.vp.height / 2 - (r.y + r.h / 2) * scale,
+      x: this.insets.left + winW / 2 - (r.x + r.w / 2) * scale,
+      y: this.insets.top + winH / 2 - (r.y + r.h / 2) * scale,
     };
   }
 
   fitAll(animate = true): void {
-    const cam = fitCamera(this.vp, this.layout.bounds);
+    const cam = fitCamera(this.vp, this.layout.bounds, this.insets);
     if (animate) {
       this.target = cam;
     } else {
@@ -318,7 +334,7 @@ export class CanvasController {
   private tick = (ticker: { deltaTime: number }): void => {
     const dt = Math.min(ticker.deltaTime, 3); // clamp huge frame gaps
     this.lastDtMs = dt * (1000 / 60);
-    const lim = panLimits(this.cam, this.vp, this.layout.bounds);
+    const lim = panLimits(this.cam, this.vp, this.layout.bounds, this.insets);
 
     if (this.target) {
       this.cam.x += (this.target.x - this.cam.x) * TARGET_EASE * dt;
@@ -333,27 +349,25 @@ export class CanvasController {
         this.target = null;
       }
     } else if (!this.dragging) {
-      // inertia
+      // inertia — rubber-clamped on each step so a fling *decelerates into* the
+      // edge instead of shooting far past it and then crawling back (the old
+      // behavior, which read as clunky).
       if (this.vel.x || this.vel.y) {
-        this.cam.x += this.vel.x * dt;
-        this.cam.y += this.vel.y * dt;
+        this.cam.x = softClamp(this.cam.x + this.vel.x * dt, lim.minX, lim.maxX);
+        this.cam.y = softClamp(this.cam.y + this.vel.y * dt, lim.minY, lim.maxY);
         const f = Math.pow(FRICTION, dt);
         this.vel.x *= f;
         this.vel.y *= f;
         if (Math.abs(this.vel.x) < 0.05) this.vel.x = 0;
         if (Math.abs(this.vel.y) < 0.05) this.vel.y = 0;
       }
-      // elastic ease back inside bounds
-      const tx = Math.min(lim.maxX, Math.max(lim.minX, this.cam.x));
-      const ty = Math.min(lim.maxY, Math.max(lim.minY, this.cam.y));
-      if (tx !== this.cam.x) {
-        this.cam.x += (tx - this.cam.x) * BOUNDS_EASE * dt;
-        this.vel.x = 0;
-      }
-      if (ty !== this.cam.y) {
-        this.cam.y += (ty - this.cam.y) * BOUNDS_EASE * dt;
-        this.vel.y = 0;
-      }
+      // settle back inside bounds with a frame-rate-independent spring; bleed
+      // any leftover velocity hard and snap to rest within a pixel so the edge
+      // never shimmers or oscillates.
+      const ease = 1 - Math.pow(1 - BOUNDS_EASE, dt);
+      const bleed = Math.pow(OVERSCROLL_FRICTION, dt);
+      this.cam.x = this.settleAxis(this.cam.x, "x", lim.minX, lim.maxX, ease, bleed);
+      this.cam.y = this.settleAxis(this.cam.y, "y", lim.minY, lim.maxY, ease, bleed);
     }
 
     // write transform
@@ -370,6 +384,31 @@ export class CanvasController {
     this.updatePulses();
     this.updateLod();
   };
+
+  /**
+   * Ease one camera axis back inside [min,max] when it's been pushed past an
+   * edge. `ease` is the (frame-rate-independent) spring factor and `bleed`
+   * drains the axis velocity while overscrolled. Snaps to the bound and stops
+   * when within SETTLE_EPS so the camera comes fully to rest.
+   */
+  private settleAxis(
+    pos: number,
+    axis: "x" | "y",
+    min: number,
+    max: number,
+    ease: number,
+    bleed: number,
+  ): number {
+    const target = pos < min ? min : pos > max ? max : null;
+    if (target === null) return pos;
+    let next = pos + (target - pos) * ease;
+    this.vel[axis] *= bleed;
+    if (Math.abs(target - next) < SETTLE_EPS) {
+      next = target;
+      this.vel[axis] = 0;
+    }
+    return next;
+  }
 
   /** Ease each sprite toward its target slot centre (re-rank / reflow motion). */
   private updatePositions(dt: number): void {
