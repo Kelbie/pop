@@ -5,7 +5,7 @@ change architecture, conventions, or tooling.
 
 ## Project
 
-Guestbookr — a decentralized guestbook for events, built on Nostr. See `README.md` for product
+Pop — a decentralized guestbook for events, built on Nostr. See `README.md` for product
 context. Entries are signed Nostr events relayed across the network; there is no central backend.
 
 ## Stack & tooling
@@ -75,7 +75,7 @@ Login supports the three standard Nostr methods, all via NDK signers. The flow l
 - **The Zustand store persists only `{ pubkey, method, signerPayload }`** (see `partialize`). Never
   persist the live signer instance, `status`, or `profile`.
 - **Security note:** nsec login persists the private key in plaintext in `localStorage`
-  (`guestbookr-auth`), because `NDKPrivateKeySigner.toPayload()` embeds the hex key. This is an
+  (`pop-auth`), because `NDKPrivateKeySigner.toPayload()` embeds the hex key. This is an
   intentional, documented tradeoff. If hardening later, NDK ships `nip49` for ncryptsec encryption.
 - All UI is dark-themed Tailwind; match the existing `neutral`/`indigo` palette and the rounded,
   bordered panel style used in `Modal.tsx` / `Header.tsx`.

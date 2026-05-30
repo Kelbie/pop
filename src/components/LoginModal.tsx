@@ -27,7 +27,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
       open={open}
       onClose={onClose}
       title="Log in"
-      subtitle="Sign in to Guestbookr with your Nostr account."
+      subtitle="Sign in to Pop with your Nostr account."
     >
       <div className="mb-5 flex gap-1 rounded-xl bg-neutral-800/60 p-1">
         {TABS.map((t) => (

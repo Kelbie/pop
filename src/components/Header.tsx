@@ -44,7 +44,7 @@ export function Header({ onLoginClick }: HeaderProps) {
     <header className="sticky top-0 z-40 border-b border-neutral-800 bg-neutral-950/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
         <span className="text-lg font-bold tracking-tight text-neutral-100">
-          Guestbookr
+          Pop
         </span>
 
         {authed ? (

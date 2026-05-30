@@ -26,7 +26,7 @@ function App() {
 
       <main className="flex flex-col items-center justify-center gap-6 px-6 py-24">
         <div className="text-center space-y-3">
-          <h1 className="text-4xl font-bold tracking-tight">Guestbookr</h1>
+          <h1 className="text-4xl font-bold tracking-tight">Pop</h1>
           <p className="text-neutral-400 max-w-md">
             Decentralized guestbooks for events, on Nostr. Leave notes, drop
             photos, zap the host.

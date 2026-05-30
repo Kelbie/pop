@@ -17,7 +17,7 @@ export const DEFAULT_NOSTRCONNECT_RELAY = "wss://relay.nsec.app";
 
 /** Metadata advertised to the remote signer during a nostrconnect:// flow. */
 const NOSTRCONNECT_OPTS = {
-  name: "Guestbookr",
+  name: "Pop",
   url: typeof window !== "undefined" ? window.location.origin : undefined,
   perms: "sign_event:1,nip44_encrypt,nip44_decrypt",
 };
@@ -178,7 +178,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: "guestbookr-auth",
+      name: "pop-auth",
       // Persist only what we need to rebuild the signer; never the transient status or profile.
       partialize: (s) => ({
         pubkey: s.pubkey,
