@@ -1,10 +1,10 @@
 // Top-zapper medals. A guestbook ranks patrons by total sats zapped; the top
-// three earn gold slash marks — /// 1st, // 2nd, / 3rd. Both card renderers
+// three earn gold star marks — ★★★ 1st, ★★ 2nd, ★ 3rd. Both card renderers
 // (WebGL texture + DOM) and the layout read from here so the podium can never
 // disagree.
 
-/** Number of slash marks for a medal rank (1->3, 2->2, 3->1; 0 = none). */
-export function slashesForRank(medal: number): number {
+/** Number of star marks for a medal rank (1->3, 2->2, 3->1; 0 = none). */
+export function starsForRank(medal: number): number {
   return medal >= 1 && medal <= 3 ? 4 - medal : 0;
 }
 

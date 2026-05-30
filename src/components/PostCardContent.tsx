@@ -1,31 +1,29 @@
 import type { Post } from "../types/post";
 import { MONO_STACK } from "../canvas/cardGeometry";
 import { CARD_COLORS, CARD_GOLD } from "../canvas/cardTheme";
-import { slashesForRank } from "../lib/medals";
+import { starsForRank } from "../lib/medals";
 import { formatRelative } from "../lib/time";
 import { proxyImage } from "../lib/img";
 
-/** Gold slash rank marks: /// 1st, // 2nd, / 3rd. */
-function GoldSlashes({ count }: { count: number }) {
-  const slant = 4;
-  const h = 11;
-  const gap = 5;
-  const w = (count - 1) * gap + slant + 2;
+/** Gold star rank marks: ★★★ 1st, ★★ 2nd, ★ 3rd. */
+function GoldStars({ count }: { count: number }) {
   return (
-    <svg
-      width={w}
-      height={h + 2}
-      viewBox={`0 0 ${w} ${h + 2}`}
-      stroke={CARD_GOLD.ring}
-      strokeWidth={2}
-      strokeLinecap="round"
-      fill="none"
-      aria-hidden
-    >
+    <div className="flex shrink-0 items-center gap-0.5" aria-hidden>
       {Array.from({ length: count }, (_, i) => (
-        <line key={i} x1={i * gap + 1} y1={h + 1} x2={i * gap + 1 + slant} y2={1} />
+        <svg
+          key={i}
+          width={14}
+          height={14}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={CARD_GOLD.ring}
+          strokeWidth={1.25}
+          strokeLinejoin="round"
+        >
+          <path d="M12 2l2.94 5.96 6.58.96-4.76 4.64 1.12 6.56L12 17.6l-5.88 3.08 1.12-6.56-4.76-4.64 6.58-.96z" />
+        </svg>
       ))}
-    </svg>
+    </div>
   );
 }
 
@@ -33,8 +31,8 @@ function GoldSlashes({ count }: { count: number }) {
  * The real (DOM) rendering of a post. Used for the zoomed-in HtmlCard and the
  * detail modal — crisp text, selectable, real <img>, clickable links.
  *
- * `medal` (1-3) shows gold slash rank marks (/// // /), mirroring the canvas
- * texture (the gold ring for any patron is applied by the caller).
+ * `medal` (1-3) shows gold star rank marks (★★★ ★★ ★) top-right, mirroring the
+ * canvas texture (the gold ring for any patron is applied by the caller).
  */
 export function PostCardContent({
   post,
@@ -83,6 +81,11 @@ export function PostCardContent({
             {formatRelative(post.createdAt)}
           </div>
         </div>
+        {medal > 0 ? (
+          <div className="ml-auto self-start">
+            <GoldStars count={starsForRank(medal)} />
+          </div>
+        ) : null}
       </div>
 
       {post.message && (
@@ -112,12 +115,11 @@ export function PostCardContent({
         />
       )}
 
-      {(medal > 0 || post.reactions || post.zaps) && (
+      {(post.reactions || post.zaps) && (
         <div
           className="mt-auto flex items-center gap-3.5 pt-2.5 text-xs"
           style={{ color: CARD_COLORS.mutedInk, fontFamily: MONO_STACK, letterSpacing: "0.02em" }}
         >
-          {medal > 0 ? <GoldSlashes count={slashesForRank(medal)} /> : null}
           {post.reactions ? <span>♥ {post.reactions}</span> : null}
           {post.zaps ? <span>⚡ {post.zaps}</span> : null}
         </div>

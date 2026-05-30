@@ -24,8 +24,8 @@ export const CARD_COLORS = {
 /**
  * Gold treatment for a card whose author zapped the event (a "patron print").
  * A thin gold ring (no glow), mirrored by both renderers — the WebGL texture
- * strokes it, the DOM card draws it as an inset box-shadow — plus the slash
- * rank marks in the footer.
+ * strokes it, the DOM card draws it as an inset box-shadow — plus the star
+ * rank marks in the header.
  */
 export const CARD_GOLD = {
   /** the ring drawn just inside the card edge — oklch(~72% 0.13 80) */
