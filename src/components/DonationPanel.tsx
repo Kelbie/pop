@@ -5,11 +5,7 @@ import { DonorRow } from "./DonorRow";
 import { useDonations } from "../hooks/useDonations";
 import { useProfile } from "../hooks/useProfile";
 import { ndk } from "../lib/ndk";
-import {
-  buildSignedZapRequest,
-  fetchZapInvoice,
-  lightningAddress,
-} from "../lib/npubcash";
+import { buildSignedZapRequest, fetchZapInvoice } from "../lib/npubcash";
 
 const fmt = new Intl.NumberFormat("en-US");
 const PRESETS = [21, 100, 1000, 5000];
@@ -34,11 +30,10 @@ export function DonationPanel({
 }) {
   const { totalSats, count, donations, loading } = useDonations(hex);
   const { displayName, avatar } = useProfile(hex);
-  const address = lightningAddress(npub);
 
   return (
     <div>
-      {/* Recipient + address QR */}
+      {/* Recipient */}
       <div className="flex flex-col items-center text-center">
         {avatar ? (
           <img
@@ -58,11 +53,6 @@ export function DonationPanel({
         {description && (
           <p className="mt-2 max-w-md text-sm text-muted">{description}</p>
         )}
-
-        <div className="mt-6 rounded-2xl border border-hairline bg-white p-4">
-          <QRCodeSVG value={`lightning:${address}`} size={208} />
-        </div>
-        <CopyAddress address={address} />
       </div>
 
       {/* Running total */}
@@ -101,27 +91,6 @@ export function DonationPanel({
         counted — use the button above (or zap from your Nostr client).
       </p>
     </div>
-  );
-}
-
-function CopyAddress({ address }: { address: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      type="button"
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(address);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        } catch {
-          /* clipboard unavailable */
-        }
-      }}
-      className="mt-3 rounded-lg border border-hairline bg-polaroid px-3 py-1.5 font-mono text-sm text-muted transition hover:text-ink"
-    >
-      {copied ? "Copied!" : address}
-    </button>
   );
 }
 
