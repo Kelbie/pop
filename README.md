@@ -1,10 +1,10 @@
-# Guestbookr
+# Pop
 
 A decentralized guestbook for events, built on [Nostr](https://nostr.com). Hosts spin up a guestbook for any event — a wedding, a conference, a birthday, a meetup — and guests leave notes, drop photos, and send the host a little money, all without a centralized server holding the data.
 
 ## Why Nostr?
 
-Traditional guestbook apps lock your memories inside someone else's database. Guestbookr stores entries as Nostr events signed by their authors and relayed across the network, so:
+Traditional guestbook apps lock your memories inside someone else's database. Pop stores entries as Nostr events signed by their authors and relayed across the network, so:
 
 - **No central server owns the data.** Entries live on Nostr relays and are cryptographically signed by the guest who wrote them.
 - **Guestbooks are portable.** A guestbook is addressable by its Nostr event, so it can be read by any Nostr-aware client, not just this app.
@@ -50,8 +50,8 @@ Traditional guestbook apps lock your memories inside someone else's database. Gu
 ### Install
 
 ```bash
-git clone <repo-url> guestbookr
-cd guestbookr
+git clone <repo-url> pop
+cd pop
 bun install
 ```
 
