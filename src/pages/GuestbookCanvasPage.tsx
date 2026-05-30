@@ -1,21 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CanvasController, type LodMode } from "../canvas/CanvasController";
-import { loadPosts } from "../data/mockPosts";
 import type { Post } from "../types/post";
 import { DetailModal } from "../components/DetailModal";
 import { DomOverlay } from "../components/DomOverlay";
 import { PixiStage } from "../components/PixiStage";
 import { SearchPill } from "../components/SearchPill";
 
-type Status = "loading" | "empty" | "ready";
+export type CanvasStatus = "loading" | "empty" | "ready";
 
-export function GuestbookCanvasPage({ onClose }: { onClose?: () => void }) {
+/**
+ * Presentational guestbook wall. Renders the supplied posts on the Pixi canvas
+ * (pan / zoom / search / detail). Fills its parent — give it a sized container.
+ */
+export function GuestbookCanvas({
+  posts,
+  status,
+}: {
+  posts: Post[];
+  status: CanvasStatus;
+}) {
   const hostRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<CanvasController | null>(null);
 
   const [ready, setReady] = useState(false);
-  const [posts, setPosts] = useState<Post[] | null>(null);
-  const [status, setStatus] = useState<Status>("loading");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [lod, setLod] = useState<{ mode: LodMode; ids: string[] }>({
@@ -50,23 +57,9 @@ export function GuestbookCanvasPage({ onClose }: { onClose?: () => void }) {
     };
   }, []);
 
-  // ---- load data ----
-  useEffect(() => {
-    let alive = true;
-    loadPosts().then((p) => {
-      if (alive) {
-        setPosts(p);
-        setStatus(p.length ? "ready" : "empty");
-      }
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
   // ---- push posts into the canvas once both are ready ----
   useEffect(() => {
-    if (ready && posts && controllerRef.current) {
+    if (ready && controllerRef.current) {
       controllerRef.current.setPosts(posts);
     }
   }, [ready, posts]);
@@ -74,7 +67,7 @@ export function GuestbookCanvasPage({ onClose }: { onClose?: () => void }) {
   // ---- search: dim non-matching cards in both layers ----
   const matches = useMemo<Set<string> | null>(() => {
     const q = query.trim().toLowerCase();
-    if (!q || !posts) return null;
+    if (!q) return null;
     const set = new Set<string>();
     for (const p of posts) {
       if (
@@ -113,11 +106,11 @@ export function GuestbookCanvasPage({ onClose }: { onClose?: () => void }) {
   };
 
   const selectedPost = selectedId
-    ? posts?.find((p) => p.id === selectedId) ?? null
+    ? posts.find((p) => p.id === selectedId) ?? null
     : null;
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-[#f2f1ee]">
+    <div className="relative h-full w-full overflow-hidden bg-[#f2f1ee]">
       <PixiStage
         hostRef={hostRef}
         controllerRef={controllerRef}
@@ -131,17 +124,6 @@ export function GuestbookCanvasPage({ onClose }: { onClose?: () => void }) {
           matches={matches}
           onSelect={handleTap}
         />
-      )}
-
-      {onClose && (
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute left-5 top-5 z-20 flex h-9 items-center gap-1 rounded-lg bg-white/90 px-3 text-sm font-medium text-neutral-700 shadow hover:bg-white"
-          aria-label="Back"
-        >
-          ← Back
-        </button>
       )}
 
       <SearchPill value={query} onChange={setQuery} />

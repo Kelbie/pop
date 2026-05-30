@@ -1,7 +1,6 @@
 import type { NDKEvent, NDKUserProfile } from "@nostr-dev-kit/ndk";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Link, useParams } from "react-router-dom";
 import { DonorRow } from "./DonorRow";
 import { useDonations } from "../hooks/useDonations";
 import { connectNdk, ndk } from "../lib/ndk";
@@ -10,33 +9,27 @@ import {
   fetchZapInvoice,
   lightningAddress,
 } from "../lib/npubcash";
-import { parsePubkeyParam, shortNpub } from "../lib/pubkey";
+import { shortNpub } from "../lib/pubkey";
 
 const fmt = new Intl.NumberFormat("en-US");
 const PRESETS = [21, 100, 1000, 5000];
 
-export function DonatePage() {
-  const { id = "" } = useParams();
-  const recipient = useMemo(() => parsePubkeyParam(id), [id]);
-
-  if (!recipient) {
-    return (
-      <div className="mx-auto max-w-md px-6 py-24 text-center">
-        <h1 className="text-2xl font-bold">Invalid profile</h1>
-        <p className="mt-2 text-neutral-400">
-          “{id}” isn’t a valid Nostr pubkey or npub.
-        </p>
-        <Link to="/" className="mt-6 inline-block text-indigo-400 hover:underline">
-          ← Back home
-        </Link>
-      </div>
-    );
-  }
-
-  return <Donate hex={recipient.hex} npub={recipient.npub} />;
-}
-
-function Donate({ hex, npub }: { hex: string; npub: string }) {
+/**
+ * The host's profile + Lightning zap surface: avatar, name, address QR, running
+ * total (npub.cash), a zap box, and the recent-donor list. Shown above the
+ * guestbook canvas on the unified event page.
+ */
+export function DonationPanel({
+  hex,
+  npub,
+  title,
+  description,
+}: {
+  hex: string;
+  npub: string;
+  title?: string;
+  description?: string;
+}) {
   const [profile, setProfile] = useState<NDKUserProfile | null>(null);
   const { totalSats, count, donations, loading } = useDonations(hex);
   const address = lightningAddress(npub);
@@ -55,41 +48,46 @@ function Donate({ hex, npub }: { hex: string; npub: string }) {
     };
   }, [hex]);
 
-  const displayName =
-    profile?.displayName || profile?.name || shortNpub(hex);
+  const displayName = profile?.displayName || profile?.name || shortNpub(hex);
   const avatar = profile?.picture || profile?.image;
 
   return (
-    <div className="mx-auto max-w-xl px-6 py-12">
+    <div className="mx-auto max-w-xl px-6 py-10">
       {/* Recipient + address QR */}
       <div className="flex flex-col items-center text-center">
         {avatar ? (
           <img
             src={avatar}
             alt=""
-            className="h-20 w-20 rounded-full object-cover ring-2 ring-neutral-800"
+            className="h-20 w-20 rounded-full object-cover ring-2 ring-neutral-200"
           />
         ) : (
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-indigo-600 text-2xl font-bold text-white">
             {displayName.slice(0, 1).toUpperCase()}
           </div>
         )}
-        <h1 className="mt-4 text-2xl font-bold">{displayName}</h1>
+        {title && <h1 className="mt-4 text-2xl font-bold">{title}</h1>}
+        <p className={"text-neutral-500 " + (title ? "mt-1 text-sm" : "mt-4 text-2xl font-bold text-neutral-900")}>
+          {title ? `Hosted by ${displayName}` : displayName}
+        </p>
+        {description && (
+          <p className="mt-2 max-w-md text-sm text-neutral-500">{description}</p>
+        )}
 
-        <div className="mt-6 rounded-2xl bg-white p-4">
+        <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-4">
           <QRCodeSVG value={`lightning:${address}`} size={208} />
         </div>
         <CopyAddress address={address} />
       </div>
 
       {/* Running total */}
-      <div className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-900 px-6 py-6 text-center">
+      <div className="mt-8 rounded-2xl border border-neutral-200 bg-white px-6 py-6 text-center">
         <div className="text-sm uppercase tracking-wide text-neutral-500">
           Total received
         </div>
-        <div className="mt-1 font-mono text-4xl font-bold text-amber-400">
+        <div className="mt-1 font-mono text-4xl font-bold text-amber-500">
           {fmt.format(Math.round(totalSats))}
-          <span className="ml-2 text-lg text-neutral-500">sats</span>
+          <span className="ml-2 text-lg text-neutral-400">sats</span>
         </div>
         <div className="mt-1 text-sm text-neutral-500">
           {loading
@@ -113,7 +111,7 @@ function Donate({ hex, npub }: { hex: string; npub: string }) {
         </div>
       )}
 
-      <p className="mt-8 text-center text-xs text-neutral-600">
+      <p className="mt-8 text-center text-xs text-neutral-400">
         Only zaps appear here. A plain Lightning payment to the address won’t be
         counted — use the button above (or zap from your Nostr client).
       </p>
@@ -135,7 +133,7 @@ function CopyAddress({ address }: { address: string }) {
           /* clipboard unavailable */
         }
       }}
-      className="mt-3 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-1.5 font-mono text-sm text-neutral-300 transition hover:text-neutral-100"
+      className="mt-3 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 font-mono text-sm text-neutral-600 transition hover:text-neutral-900"
     >
       {copied ? "Copied!" : address}
     </button>
@@ -205,16 +203,16 @@ function ZapBox({ hex, npub }: { hex: string; npub: string }) {
 
   if (status === "paid") {
     return (
-      <div className="mt-6 rounded-2xl border border-green-900/60 bg-green-950/40 px-6 py-8 text-center">
+      <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 px-6 py-8 text-center">
         <div className="text-3xl">⚡️</div>
-        <h2 className="mt-2 text-xl font-bold text-green-200">Thank you!</h2>
-        <p className="mt-1 text-sm text-green-300/80">
+        <h2 className="mt-2 text-xl font-bold text-green-700">Thank you!</h2>
+        <p className="mt-1 text-sm text-green-600">
           Your {fmt.format(amount)} sat zap was received.
         </p>
         <button
           type="button"
           onClick={reset}
-          className="mt-4 rounded-xl border border-green-800 px-4 py-2 text-sm font-semibold text-green-100 transition hover:bg-green-900/40"
+          className="mt-4 rounded-xl border border-green-300 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100"
         >
           Zap again
         </button>
@@ -224,17 +222,17 @@ function ZapBox({ hex, npub }: { hex: string; npub: string }) {
 
   if (status === "invoice" && invoice) {
     return (
-      <div className="mt-6 flex flex-col items-center rounded-2xl border border-neutral-800 bg-neutral-900 px-6 py-6 text-center">
-        <p className="text-sm text-neutral-300">
+      <div className="mt-6 flex flex-col items-center rounded-2xl border border-neutral-200 bg-white px-6 py-6 text-center">
+        <p className="text-sm text-neutral-600">
           Scan to pay {fmt.format(amount)} sats
         </p>
-        <div className="mt-4 rounded-2xl bg-white p-4">
+        <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4">
           <QRCodeSVG value={`lightning:${invoice}`} size={208} />
         </div>
         <button
           type="button"
           onClick={() => navigator.clipboard.writeText(invoice).catch(() => {})}
-          className="mt-3 w-full truncate rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 font-mono text-xs text-neutral-400 transition hover:text-neutral-200"
+          className="mt-3 w-full truncate rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 font-mono text-xs text-neutral-500 transition hover:text-neutral-800"
         >
           {invoice}
         </button>
@@ -244,7 +242,7 @@ function ZapBox({ hex, npub }: { hex: string; npub: string }) {
         <button
           type="button"
           onClick={reset}
-          className="mt-2 text-xs text-neutral-500 hover:text-neutral-300"
+          className="mt-2 text-xs text-neutral-500 hover:text-neutral-800"
         >
           Cancel
         </button>
@@ -253,7 +251,7 @@ function ZapBox({ hex, npub }: { hex: string; npub: string }) {
   }
 
   return (
-    <div className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-900 px-6 py-6">
+    <div className="mt-6 rounded-2xl border border-neutral-200 bg-white px-6 py-6">
       <div className="flex flex-wrap gap-2">
         {PRESETS.map((p) => (
           <button
@@ -263,8 +261,8 @@ function ZapBox({ hex, npub }: { hex: string; npub: string }) {
             className={
               "rounded-lg px-3 py-1.5 text-sm font-medium transition " +
               (amount === p
-                ? "bg-amber-500 text-neutral-950"
-                : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700")
+                ? "bg-amber-500 text-white"
+                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200")
             }
           >
             {fmt.format(p)}
@@ -277,7 +275,7 @@ function ZapBox({ hex, npub }: { hex: string; npub: string }) {
           min={1}
           value={amount}
           onChange={(e) => setAmount(Number(e.target.value))}
-          className="w-32 rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 outline-none focus:border-amber-500"
+          className="w-32 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-amber-500"
         />
         <span className="text-sm text-neutral-500">sats</span>
       </div>
@@ -285,11 +283,11 @@ function ZapBox({ hex, npub }: { hex: string; npub: string }) {
         type="button"
         onClick={startZap}
         disabled={status === "loading" || amount <= 0}
-        className="mt-4 w-full rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-4 w-full rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {status === "loading" ? "Creating invoice…" : `⚡️ Zap ${fmt.format(amount)} sats`}
       </button>
-      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+      {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
     </div>
   );
 }

@@ -1,6 +1,9 @@
 import NDK from "@nostr-dev-kit/ndk";
 
-const RELAYS = (import.meta.env.VITE_RELAYS ?? "wss://relay.damus.io,wss://nos.lol")
+/** Relays we connect to, advertise as nevent hints, and read events from. */
+export const RELAYS: string[] = (
+  import.meta.env.VITE_RELAYS ?? "wss://relay.damus.io,wss://nos.lol"
+)
   .split(",")
   .map((r: string) => r.trim())
   .filter(Boolean);

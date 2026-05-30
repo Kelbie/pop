@@ -1,30 +1,22 @@
 import { useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
-import { DonatePage } from "./components/DonatePage";
 import { Header } from "./components/Header";
 import { LoginModal } from "./components/LoginModal";
 import { PopCreator } from "./components/PopCreator";
-import { GuestbookCanvasPage } from "./pages/GuestbookCanvasPage";
+import { EventGuestbookPage } from "./pages/EventGuestbookPage";
 import { connectNdk, ndk } from "./lib/ndk";
 import { useAuthStore } from "./store/auth";
-
-type View = "home" | "canvas";
 
 function Home({ onLoginClick }: { onLoginClick: () => void }) {
   const [status, setStatus] = useState<"connecting" | "connected" | "error">(
     "connecting",
   );
-  const [view, setView] = useState<View>("home");
 
   useEffect(() => {
     connectNdk()
       .then(() => setStatus("connected"))
       .catch(() => setStatus("error"));
   }, []);
-
-  if (view === "canvas") {
-    return <GuestbookCanvasPage onClose={() => setView("home")} />;
-  }
 
   return (
     <main className="flex flex-col items-center gap-8 px-6 py-16">
@@ -35,18 +27,11 @@ function Home({ onLoginClick }: { onLoginClick: () => void }) {
           className="h-24 w-24 rounded-3xl"
         />
         <h1 className="text-4xl font-bold tracking-tight">Pop</h1>
-        <p className="text-neutral-400 max-w-md">
+        <p className="text-neutral-500 max-w-md">
           Decentralized guestbooks for events, on Nostr. Leave notes, drop
           photos, zap the host.
         </p>
         <ConnectionStatus status={status} />
-        <button
-          type="button"
-          onClick={() => setView("canvas")}
-          className="mt-1 rounded-xl border border-neutral-700 px-4 py-2 text-sm font-semibold text-neutral-200 transition hover:border-neutral-500 hover:text-white"
-        >
-          View the guestbook →
-        </button>
       </div>
 
       <CreatorSection onLoginClick={onLoginClick} />
@@ -63,7 +48,7 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100">
+    <div className="min-h-screen bg-neutral-50 text-neutral-900">
       <Header onLoginClick={() => setLoginOpen(true)} />
 
       <Routes>
@@ -71,7 +56,12 @@ function App() {
           path="/"
           element={<Home onLoginClick={() => setLoginOpen(true)} />}
         />
-        <Route path="/p/:id" element={<DonatePage />} />
+        <Route
+          path="/e/:nevent"
+          element={
+            <EventGuestbookPage onLoginClick={() => setLoginOpen(true)} />
+          }
+        />
       </Routes>
 
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
@@ -122,7 +112,7 @@ function ConnectionStatus({
               : "bg-yellow-500 animate-pulse")
         }
       />
-      <span className="text-neutral-400">
+      <span className="text-neutral-500">
         {status === "connected"
           ? `Connected to ${relayCount} relay${relayCount === 1 ? "" : "s"}`
           : status === "error"
