@@ -1,9 +1,18 @@
 import { CanvasSource, Texture } from "pixi.js";
 import type { Post } from "../types/post";
 import { CARD, computeCardGeometry, type CardGeometry } from "./cardGeometry";
-import { CARD_COLORS, CARD_SHADOW_REST_COLOR } from "./cardTheme";
+import { CARD_COLORS, CARD_GOLD, CARD_SHADOW_REST_COLOR } from "./cardTheme";
+import { slashesForRank } from "../lib/medals";
 import { formatRelative } from "../lib/time";
 import { proxyImage } from "../lib/img";
+
+/** How a card is decorated for its author's zap standing. */
+export interface CardBadge {
+  /** author zapped at all -> gold ring + glow */
+  gold: boolean;
+  /** podium place 1-3 (0 = none) -> 🥇/🥈/🥉 footer */
+  medal: number;
+}
 
 // Device pixel ratio, capped at 2 to bound VRAM (200 tall media cards add up).
 export const DPR = Math.min(
@@ -105,13 +114,15 @@ function drawCard(
   post: Post,
   geo: CardGeometry,
   images: { avatar?: HTMLImageElement; media?: HTMLImageElement },
+  badge: CardBadge = { gold: false, medal: 0 },
 ) {
   const M = SHADOW_MARGIN;
   const { padding, avatar, radius, messageLineHeight } = CARD;
+  const gilded = badge.gold;
 
   ctx.clearRect(-M, -M, geo.width + M * 2, geo.height + M * 2);
 
-  // drop shadow + white card body
+  // drop shadow + white card body (same warm grey rest-shadow for every card).
   ctx.save();
   ctx.shadowColor = CARD_SHADOW_REST_COLOR;
   ctx.shadowBlur = 18;
@@ -120,6 +131,19 @@ function drawCard(
   roundRectPath(ctx, 0, 0, geo.width, geo.height, radius);
   ctx.fill();
   ctx.restore();
+
+  // gold ring, stroked just inside the edge (2-stop gradient for a little shine)
+  if (gilded) {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, geo.height);
+    grad.addColorStop(0, CARD_GOLD.ringBright);
+    grad.addColorStop(1, CARD_GOLD.ring);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1;
+    roundRectPath(ctx, 0.5, 0.5, geo.width - 1, geo.height - 1, radius - 0.5);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   // header: avatar + name + meta
   drawAvatar(ctx, post, padding, geo.headerY, avatar, images.avatar);
@@ -176,14 +200,39 @@ function drawCard(
     ctx.restore();
   }
 
-  // footer (muted engagement line, in the stamp voice)
-  ctx.fillStyle = META;
+  // footer (engagement line, in the stamp voice). A top-three patron leads with
+  // gold slash marks: /// 1st, // 2nd, / 3rd.
+  let x = padding;
+  const slashes = slashesForRank(badge.medal);
+  if (slashes) {
+    const h = 11; // slash height
+    const slant = 4; // horizontal run of the diagonal
+    const gap = 5; // spacing between slashes
+    const top = geo.footerY + 2;
+    ctx.save();
+    ctx.strokeStyle = CARD_GOLD.ring;
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    for (let i = 0; i < slashes; i++) {
+      const sx = x + i * gap;
+      ctx.beginPath();
+      ctx.moveTo(sx, top + h);
+      ctx.lineTo(sx + slant, top);
+      ctx.stroke();
+    }
+    ctx.restore();
+    x += (slashes - 1) * gap + slant + 12;
+  }
+
   ctx.font = CARD.stampFont;
   ctx.letterSpacing = "0.02em";
   const bits: string[] = [];
   if (post.reactions) bits.push(`♥ ${post.reactions}`);
   if (post.zaps) bits.push(`⚡ ${post.zaps}`);
-  if (bits.length) ctx.fillText(bits.join("   "), padding, geo.footerY + 12);
+  if (bits.length) {
+    ctx.fillStyle = META;
+    ctx.fillText(bits.join("   "), x, geo.footerY + 12);
+  }
   ctx.letterSpacing = "0px";
 }
 
@@ -195,10 +244,16 @@ export interface CardTextureHandle {
   cssWidth: number;
   cssHeight: number;
   offset: number; // place sprite at (rect.x - offset, rect.y - offset)
+  /** Re-badge in place — redraws on the same canvas, keeping any already-loaded
+   * images, so a live zap doesn't reload the card's media. */
+  setBadge(badge: CardBadge): void;
   destroy(): void;
 }
 
-export function buildCardTexture(post: Post): CardTextureHandle {
+export function buildCardTexture(
+  post: Post,
+  badge: CardBadge = { gold: false, medal: 0 },
+): CardTextureHandle {
   const geo = computeCardGeometry(post);
   const M = SHADOW_MARGIN;
   const cssWidth = geo.width + M * 2;
@@ -211,8 +266,9 @@ export function buildCardTexture(post: Post): CardTextureHandle {
   ctx.scale(DPR, DPR);
   ctx.translate(M, M); // card-local (0,0) == card top-left
 
+  let current = badge;
   const images: { avatar?: HTMLImageElement; media?: HTMLImageElement } = {};
-  drawCard(ctx, post, geo, images); // immediate placeholder render
+  drawCard(ctx, post, geo, images, current); // immediate placeholder render
 
   const source = new CanvasSource({ resource: canvas, resolution: DPR });
   const texture = new Texture({ source });
@@ -220,7 +276,7 @@ export function buildCardTexture(post: Post): CardTextureHandle {
   let destroyed = false;
   const redraw = () => {
     if (destroyed) return;
-    drawCard(ctx, post, geo, images);
+    drawCard(ctx, post, geo, images, current);
     source.update();
   };
 
@@ -247,6 +303,11 @@ export function buildCardTexture(post: Post): CardTextureHandle {
     cssWidth,
     cssHeight,
     offset: M,
+    setBadge(badge: CardBadge) {
+      if (badge.gold === current.gold && badge.medal === current.medal) return;
+      current = badge;
+      redraw();
+    },
     destroy() {
       destroyed = true;
       texture.destroy(true);
