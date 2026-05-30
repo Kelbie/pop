@@ -2,6 +2,7 @@ import { Application, Container, Sprite } from "pixi.js";
 import type { Post } from "../types/post";
 import { buildCardTexture, type CardTextureHandle } from "./cardTexture";
 import { layoutMasonry, type Layout, type Rect } from "./layoutMasonry";
+import { medalRanks } from "../lib/medals";
 import {
   fitCamera,
   LOD_NEAR_IN,
@@ -18,15 +19,18 @@ export type LodMode = "far" | "near";
 
 interface CardNode {
   post: Post;
-  rect: Rect;
+  rect: Rect; // target slot; the sprite eases toward its centre
   sprite: Sprite;
   handle: CardTextureHandle;
-  baseScale: number; // texture->world scale (1); reveal multiplies this
+  baseScale: number; // texture->world scale (1); reveal/pulse multiply this
+  gold: boolean; // author zapped -> gold ring + glow
+  medal: number; // podium place 1-3 (0 = none)
   dim: number; // search alpha (1 or DIM_ALPHA)
   revealed: boolean; // first-reveal done -> never animates again
   revealing: boolean;
   revealT: number; // ms elapsed since entering the reveal viewport
   delay: number; // ms stagger before the fade starts
+  pulseT: number; // ms into the gild celebration pulse (-1 = idle)
 }
 
 const FRICTION = 0.9; // per-frame velocity decay
@@ -34,8 +38,13 @@ const BOUNDS_EASE = 0.18; // spring strength easing back inside the pan bounds
 const OVERSCROLL_FRICTION = 0.5; // extra per-frame velocity bleed past an edge
 const SETTLE_EPS = 0.5; // px: snap to the bound and stop when this close
 const TARGET_EASE = 0.18;
+const POS_EASE = 0.16; // per-frame ease as cards glide to a new ranked slot
 const RUBBER = 0.4;
 const DIM_ALPHA = 0.18;
+
+// Gild celebration: a brief scale bump when a card first turns gold.
+const PULSE_MS = 440;
+const PULSE_AMP = 0.09;
 
 // Card reveal (Emil: subtle, <300ms, fires once per card, ease-out).
 const REVEAL_MS = 260;
@@ -62,6 +71,8 @@ export class CanvasController {
   private app: Application | null = null;
   private world = new Container();
   private nodes = new Map<string, CardNode>();
+  private postList: Post[] = [];
+  private zappedSats = new Map<string, number>();
   private layout: Layout = {
     rects: new Map(),
     bounds: { width: 0, height: 0 },
@@ -115,13 +126,38 @@ export class CanvasController {
     app.ticker.add(this.tick);
   }
 
+  /**
+   * Reconcile the wall with a new post list. Existing cards are kept (and glide
+   * to their new ranked slots); only added posts mint a texture and removed ones
+   * are torn down — so a live arrival never flickers the whole board.
+   */
   setPosts(posts: Post[]): void {
-    this.clearNodes();
-    this.layout = layoutMasonry(posts);
+    this.postList = posts;
+    const incoming = new Set(posts.map((p) => p.id));
+    for (const [id, node] of this.nodes) {
+      if (!incoming.has(id)) {
+        this.world.removeChild(node.sprite);
+        node.sprite.destroy();
+        node.handle.destroy();
+        this.nodes.delete(id);
+      }
+    }
+
+    const wasEmpty = this.nodes.size === 0;
+    this.layout = layoutMasonry(posts, this.zappedSats);
+    const medals = medalRanks(this.zappedSats);
+
     for (const post of posts) {
       const rect = this.layout.rects.get(post.id);
       if (!rect) continue;
-      const handle = buildCardTexture(post);
+      const existing = this.nodes.get(post.id);
+      if (existing) {
+        existing.rect = rect; // tick eases the sprite to the new slot
+        continue;
+      }
+      const gold = (this.zappedSats.get(post.author.pubkey) ?? 0) > 0;
+      const medal = medals.get(post.author.pubkey) ?? 0;
+      const handle = buildCardTexture(post, { gold, medal });
       const sprite = new Sprite(handle.texture);
       // anchor at centre so the reveal scales from the card's middle
       sprite.anchor.set(0.5);
@@ -137,15 +173,44 @@ export class CanvasController {
         sprite,
         handle,
         baseScale,
+        gold,
+        medal,
         dim: 1,
         revealed: shown,
         revealing: false,
         revealT: 0,
         delay: 0,
+        pulseT: -1,
       });
     }
     this.applyMatches();
-    this.fitAll(false);
+    if (wasEmpty) this.fitAll(false);
+  }
+
+  /**
+   * Update who zapped (author hex -> total sats). Re-badges changed cards in
+   * place (a fresh patron gets a celebratory pulse) and re-ranks the wall so
+   * the patrons cluster in the centre.
+   */
+  setZappers(zappedSats: Map<string, number>): void {
+    this.zappedSats = zappedSats;
+    const medals = medalRanks(zappedSats);
+    for (const node of this.nodes.values()) {
+      const gold = (zappedSats.get(node.post.author.pubkey) ?? 0) > 0;
+      const medal = medals.get(node.post.author.pubkey) ?? 0;
+      if (gold === node.gold && medal === node.medal) continue;
+      const wasGold = node.gold;
+      node.gold = gold;
+      node.medal = medal;
+      node.handle.setBadge({ gold, medal });
+      if (gold && !wasGold && !this.reducedMotion) node.pulseT = 0;
+    }
+    // Re-rank: update every node's target slot; the tick glides sprites over.
+    this.layout = layoutMasonry(this.postList, this.zappedSats);
+    for (const [id, node] of this.nodes) {
+      const rect = this.layout.rects.get(id);
+      if (rect) node.rect = rect;
+    }
   }
 
   setSearchMatches(ids: Set<string> | null): void {
@@ -312,8 +377,11 @@ export class CanvasController {
     // sync DOM overlay on the SAME frame
     this.cameraCb?.(this.cam);
 
-    // reveal newly-visible cards, then LOD + culling
+    // glide cards to their (possibly re-ranked) slots, reveal newly-visible
+    // cards, run gild pulses, then LOD + culling
+    this.updatePositions(dt);
     this.updateReveals();
+    this.updatePulses();
     this.updateLod();
   };
 
@@ -340,6 +408,43 @@ export class CanvasController {
       this.vel[axis] = 0;
     }
     return next;
+  }
+
+  /** Ease each sprite toward its target slot centre (re-rank / reflow motion). */
+  private updatePositions(dt: number): void {
+    for (const node of this.nodes.values()) {
+      const cx = node.rect.x + node.rect.w / 2;
+      const cy = node.rect.y + node.rect.h / 2;
+      const p = node.sprite.position;
+      const dx = cx - p.x;
+      const dy = cy - p.y;
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) {
+        if (dx || dy) p.set(cx, cy);
+        continue;
+      }
+      const k = Math.min(1, POS_EASE * dt);
+      p.set(p.x + dx * k, p.y + dy * k);
+    }
+  }
+
+  /** Brief scale bump when a card first turns gold. Skips cards mid-reveal. */
+  private updatePulses(): void {
+    for (const node of this.nodes.values()) {
+      if (node.pulseT < 0) continue;
+      if (!node.revealed) {
+        node.pulseT = -1;
+        continue;
+      }
+      node.pulseT += this.lastDtMs;
+      const t = node.pulseT / PULSE_MS;
+      if (t >= 1) {
+        node.pulseT = -1;
+        node.sprite.scale.set(node.baseScale);
+        continue;
+      }
+      const mul = 1 + PULSE_AMP * Math.sin(Math.PI * t);
+      node.sprite.scale.set(node.baseScale * mul);
+    }
   }
 
   /** Expanded viewport rect in world coords (margin as a fraction of size). */

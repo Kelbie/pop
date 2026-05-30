@@ -5,6 +5,7 @@ import { AmbientBackground } from "../components/AmbientBackground";
 import { DetailModal } from "../components/DetailModal";
 import { DomOverlay } from "../components/DomOverlay";
 import { PixiStage } from "../components/PixiStage";
+import { medalRanks } from "../lib/medals";
 
 export type CanvasStatus = "loading" | "empty" | "ready";
 
@@ -14,6 +15,9 @@ export type CanvasStatus = "loading" | "empty" | "ready";
 const RIGHT_INSET = 72;
 const BOTTOM_INSET = 72;
 const LEFT_INSET = 16;
+
+// Stable empty map so a missing `zappedSats` prop doesn't churn DomOverlay.
+const EMPTY_SATS: Map<string, number> = new Map();
 
 /**
  * Presentational guestbook wall. Renders the supplied posts on the Pixi canvas
@@ -27,6 +31,7 @@ export function GuestbookCanvas({
   query = "",
   flashSignal = 0,
   topInset = 0,
+  zappedSats,
 }: {
   posts: Post[];
   status: CanvasStatus;
@@ -34,6 +39,8 @@ export function GuestbookCanvas({
   flashSignal?: number;
   /** Height (px) of the floating top chrome overlaying the wall. */
   topInset?: number;
+  /** author hex pubkey -> total sats they zapped; gilds + centres their cards */
+  zappedSats?: Map<string, number>;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<CanvasController | null>(null);
@@ -92,6 +99,13 @@ export function GuestbookCanvas({
     }
   }, [ready, topInset]);
 
+  // ---- push zap totals: gilds patron cards + re-ranks the wall ----
+  useEffect(() => {
+    if (ready && controllerRef.current) {
+      controllerRef.current.setZappers(zappedSats ?? new Map());
+    }
+  }, [ready, zappedSats]);
+
   // ---- search: dim non-matching cards in both layers ----
   const matches = useMemo<Set<string> | null>(() => {
     const q = query.trim().toLowerCase();
@@ -133,9 +147,20 @@ export function GuestbookCanvas({
     setSelectedId(id);
   };
 
+  const medals = useMemo(
+    () => medalRanks(zappedSats ?? EMPTY_SATS),
+    [zappedSats],
+  );
+
   const selectedPost = selectedId
     ? posts.find((p) => p.id === selectedId) ?? null
     : null;
+  const selectedGold = selectedPost
+    ? (zappedSats?.get(selectedPost.author.pubkey) ?? 0) > 0
+    : false;
+  const selectedMedal = selectedPost
+    ? medals.get(selectedPost.author.pubkey) ?? 0
+    : 0;
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-paper">
@@ -152,6 +177,8 @@ export function GuestbookCanvas({
           controller={controllerRef.current}
           lod={lod}
           matches={matches}
+          zappedSats={zappedSats ?? EMPTY_SATS}
+          medals={medals}
           onSelect={handleTap}
         />
       )}
@@ -183,7 +210,12 @@ export function GuestbookCanvas({
       )}
 
       {selectedPost && (
-        <DetailModal post={selectedPost} onClose={() => setSelectedId(null)} />
+        <DetailModal
+          post={selectedPost}
+          gold={selectedGold}
+          medal={selectedMedal}
+          onClose={() => setSelectedId(null)}
+        />
       )}
     </div>
   );

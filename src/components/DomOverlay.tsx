@@ -2,6 +2,7 @@ import { useEffect, useRef, type CSSProperties } from "react";
 import type { CanvasController, LodMode } from "../canvas/CanvasController";
 import {
   CARD_COLORS,
+  CARD_GOLD,
   CARD_SHADOW_LIFT,
   CARD_SHADOW_REST,
 } from "../canvas/cardTheme";
@@ -18,11 +19,18 @@ export function DomOverlay({
   controller,
   lod,
   matches,
+  zappedSats,
+  medals,
   onSelect,
 }: {
   controller: CanvasController;
   lod: { mode: LodMode; ids: string[] };
   matches: Set<string> | null;
+  /** author hex -> sats; passed (not read off the controller) so a live zap
+   * re-renders the gold ring on an already-mounted card. */
+  zappedSats: Map<string, number>;
+  /** author hex -> podium place 1-3 for the top zappers. */
+  medals: Map<string, number>;
   onSelect: (id: string) => void;
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -51,6 +59,8 @@ export function DomOverlay({
           const post = controller.getPost(id);
           if (!rect || !post) return null;
           const dim = matches && !matches.has(id);
+          const gold = (zappedSats.get(post.author.pubkey) ?? 0) > 0;
+          const medal = medals.get(post.author.pubkey) ?? 0;
           return (
             <button
               key={id}
@@ -68,11 +78,14 @@ export function DomOverlay({
                   "--print-surface": CARD_COLORS.surface,
                   "--print-shadow-rest": CARD_SHADOW_REST,
                   "--print-shadow-lift": CARD_SHADOW_LIFT,
-                  "--print-ring": CARD_COLORS.ink,
+                  "--print-ring": gold ? CARD_GOLD.ring : CARD_COLORS.ink,
+                  ...(gold
+                    ? { boxShadow: `inset 0 0 0 1px ${CARD_GOLD.ring}` }
+                    : null),
                 } as CSSProperties
               }
             >
-              <PostCardContent post={post} />
+              <PostCardContent post={post} medal={medal} />
             </button>
           );
         })}

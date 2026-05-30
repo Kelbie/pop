@@ -6,10 +6,11 @@ import { Modal } from "../components/Modal";
 import { SlideOver } from "../components/SlideOver";
 import { GuestbookCanvas, type CanvasStatus } from "./GuestbookCanvasPage";
 import { connectNdk } from "../lib/ndk";
-import { createEntry, loadEntries } from "../lib/guestbook";
+import { createEntry, loadEntries, subscribeEntries } from "../lib/guestbook";
 import { parseNeventParam } from "../lib/nevent";
 import { fetchPop, type Pop } from "../lib/pop";
 import { parsePubkeyParam } from "../lib/pubkey";
+import { useDonations } from "../hooks/useDonations";
 import type { Post } from "../types/post";
 import { useAuthStore } from "../store/auth";
 
@@ -86,11 +87,35 @@ function EventGuestbook({
   const [posts, setPosts] = useState<Post[] | null>(null);
   useEffect(() => {
     let alive = true;
-    loadEntries(pop).then((list) => alive && setPosts(list));
+    // Merge a post in by id (newest wins), keeping the list de-duplicated as the
+    // initial fetch and the live subscription both feed in.
+    const merge = (incoming: Post[]) =>
+      setPosts((prev) => {
+        const byId = new Map((prev ?? []).map((p) => [p.id, p]));
+        for (const p of incoming) byId.set(p.id, p);
+        return [...byId.values()];
+      });
+
+    loadEntries(pop).then((list) => alive && merge(list));
+    // Live: new signatures from anyone stream onto the wall as they arrive.
+    const unsub = subscribeEntries(pop, (post) => alive && merge([post]));
     return () => {
       alive = false;
+      unsub();
     };
   }, [pop]);
+
+  // Live zap totals for the event host, folded into an author -> sats map so the
+  // canvas can gild + centre cards whose author zapped.
+  const { donations } = useDonations(recipient?.hex ?? null);
+  const zappedSats = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const d of donations) {
+      if (!d.senderHex) continue;
+      m.set(d.senderHex, (m.get(d.senderHex) ?? 0) + d.sats);
+    }
+    return m;
+  }, [donations]);
 
   const [query, setQuery] = useState("");
   const [zapOpen, setZapOpen] = useState(false);
@@ -124,6 +149,7 @@ function EventGuestbook({
         query={query}
         flashSignal={flash}
         topInset={headerH + 8}
+        zappedSats={zappedSats}
       />
 
       <CameraFlash trigger={flash} />
