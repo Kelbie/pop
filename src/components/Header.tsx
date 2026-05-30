@@ -33,7 +33,7 @@ export function Header({ onLoginClick }: HeaderProps) {
   const avatar = profile?.picture || profile?.image;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-neutral-800 bg-neutral-950/80 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
         <Link to="/" className="flex items-center gap-2">
           <img
@@ -41,7 +41,7 @@ export function Header({ onLoginClick }: HeaderProps) {
             alt="Pop logo"
             className="h-8 w-8 rounded-lg"
           />
-          <span className="text-lg font-bold tracking-tight text-neutral-100">
+          <span className="text-lg font-bold tracking-tight text-neutral-900">
             Pop
           </span>
         </Link>
@@ -51,7 +51,7 @@ export function Header({ onLoginClick }: HeaderProps) {
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
-              className="flex items-center gap-2 rounded-full border border-neutral-800 bg-neutral-900 py-1 pl-1 pr-3 transition hover:border-neutral-700"
+              className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white py-1 pl-1 pr-3 transition hover:border-neutral-300"
             >
               {avatar ? (
                 <img
@@ -64,20 +64,20 @@ export function Header({ onLoginClick }: HeaderProps) {
                   {displayName.slice(0, 1).toUpperCase()}
                 </span>
               )}
-              <span className="max-w-[10rem] truncate text-sm text-neutral-200">
+              <span className="max-w-[10rem] truncate text-sm text-neutral-700">
                 {displayName}
               </span>
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 py-1 shadow-2xl">
+              <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-xl border border-neutral-200 bg-white py-1 shadow-2xl">
                 <button
                   type="button"
                   onClick={() => {
                     logout();
                     setMenuOpen(false);
                   }}
-                  className="block w-full px-4 py-2 text-left text-sm text-neutral-300 transition hover:bg-neutral-800"
+                  className="block w-full px-4 py-2 text-left text-sm text-neutral-700 transition hover:bg-neutral-100"
                 >
                   Log out
                 </button>

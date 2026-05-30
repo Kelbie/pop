@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { createPop, fetchPops, type Pop } from "../lib/pop";
 
 export function PopCreator({ host }: { host: string }) {
@@ -18,15 +19,14 @@ export function PopCreator({ host }: { host: string }) {
 
   return (
     <div className="w-full max-w-xl space-y-8">
-      <CreatePopForm
-        onCreated={(pop) => setPops((prev) => [pop, ...(prev ?? [])])}
-      />
+      <CreatePopForm />
       <PopList pops={pops ?? []} loading={loading} />
     </div>
   );
 }
 
-function CreatePopForm({ onCreated }: { onCreated: (pop: Pop) => void }) {
+function CreatePopForm() {
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -44,12 +44,9 @@ function CreatePopForm({ onCreated }: { onCreated: (pop: Pop) => void }) {
         name: name.trim(),
         description: description.trim(),
       });
-      onCreated(pop);
-      setName("");
-      setDescription("");
+      navigate(`/e/${pop.nevent}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create Pop.");
-    } finally {
       setSubmitting(false);
     }
   }
@@ -57,39 +54,39 @@ function CreatePopForm({ onCreated }: { onCreated: (pop: Pop) => void }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 rounded-2xl border border-neutral-800 bg-neutral-900/50 p-6"
+      className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-6"
     >
       <h2 className="text-lg font-semibold">Create a Pop</h2>
 
       <label className="block space-y-1.5">
-        <span className="text-sm text-neutral-400">Event name</span>
+        <span className="text-sm text-neutral-500">Event name</span>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Sarah & Tom's Wedding"
           maxLength={120}
-          className="w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+          className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
         />
       </label>
 
       <label className="block space-y-1.5">
-        <span className="text-sm text-neutral-400">Description</span>
+        <span className="text-sm text-neutral-500">Description</span>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Leave us a note from the big day."
           rows={3}
           maxLength={1000}
-          className="w-full resize-y rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+          className="w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
         />
       </label>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-500">{error}</p>}
 
       <button
         type="submit"
         disabled={!canSubmit}
-        className="rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {submitting ? "Publishing…" : "Create Pop"}
       </button>
@@ -116,13 +113,17 @@ function PopList({ pops, loading }: { pops: Pop[]; loading: boolean }) {
         {pops.map((pop) => (
           <li
             key={pop.id}
-            className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-4"
+            className="rounded-xl border border-neutral-200 bg-white p-4"
           >
-            <h3 className="font-medium">{pop.name}</h3>
-            {pop.description && (
-              <p className="mt-1 text-sm text-neutral-400">{pop.description}</p>
-            )}
-            <CopyNaddr naddr={pop.naddr} />
+            <Link to={`/e/${pop.nevent}`} className="block">
+              <h3 className="font-medium hover:underline">{pop.name}</h3>
+              {pop.description && (
+                <p className="mt-1 text-sm text-neutral-500">
+                  {pop.description}
+                </p>
+              )}
+            </Link>
+            <CopyLink nevent={pop.nevent} />
           </li>
         ))}
       </ul>
@@ -130,20 +131,21 @@ function PopList({ pops, loading }: { pops: Pop[]; loading: boolean }) {
   );
 }
 
-function CopyNaddr({ naddr }: { naddr: string }) {
+function CopyLink({ nevent }: { nevent: string }) {
   const [copied, setCopied] = useState(false);
+  const url = `${window.location.origin}/e/${nevent}`;
   return (
     <button
       type="button"
       onClick={async () => {
-        await navigator.clipboard.writeText(naddr);
+        await navigator.clipboard.writeText(url);
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className="mt-3 truncate font-mono text-xs text-neutral-500 transition hover:text-neutral-300"
-      title="Copy shareable naddr"
+      className="mt-3 truncate font-mono text-xs text-neutral-500 transition hover:text-neutral-800"
+      title="Copy shareable link"
     >
-      {copied ? "Copied!" : `${naddr.slice(0, 24)}…`}
+      {copied ? "Copied!" : `${nevent.slice(0, 24)}…`}
     </button>
   );
 }
